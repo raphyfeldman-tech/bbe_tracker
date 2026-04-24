@@ -71,3 +71,31 @@ def test_runqueue_sheet_has_expected_headers():
         "status", "started_at", "completed_at",
         "error_message", "result_path",
     ]
+
+
+def test_template_is_byte_deterministic(tmp_path):
+    """Regenerating the template twice must produce identical bytes.
+
+    Without pinned timestamps in `build_template`, openpyxl stamps the current
+    wall-clock time into docProps/core.xml and the committed binary becomes
+    noisy and meaningless under git diff.
+    """
+    import sys
+    scripts_dir = Path("scripts").resolve()
+    sys.path.insert(0, str(scripts_dir))
+    try:
+        from make_template import build_template
+    finally:
+        sys.path.pop(0)
+
+    a = tmp_path / "a.xlsx"
+    b = tmp_path / "b.xlsx"
+    build_template(a)
+    build_template(b)
+    assert a.read_bytes() == b.read_bytes()
+
+
+def test_fixture_matches_committed_template():
+    """The fixture copy must be byte-identical to the committed template."""
+    assert (Path("tests/fixtures/sample_workbook.xlsx").read_bytes()
+            == Path("templates/workbook_template.xlsx").read_bytes())

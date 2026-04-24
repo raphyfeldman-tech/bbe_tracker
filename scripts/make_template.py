@@ -3,6 +3,7 @@ from __future__ import annotations
 
 Run: python scripts/make_template.py
 """
+from datetime import datetime
 from pathlib import Path
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
@@ -121,6 +122,12 @@ def _write_sheet(ws: Worksheet, tab_colour_key: str, headers: list[str]) -> None
 
 def build_template(out: Path) -> None:
     wb = Workbook()
+    # Pin timestamps so successive regenerations are byte-identical.
+    # Without this, openpyxl stamps wall-clock time into docProps/core.xml
+    # and the committed binary churns every time anyone runs this script.
+    pinned = datetime(2026, 1, 1)
+    wb.properties.created = pinned
+    wb.properties.modified = pinned
     # openpyxl creates a default sheet; delete it
     default = wb.active
     wb.remove(default)
