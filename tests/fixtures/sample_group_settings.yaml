@@ -1,0 +1,25 @@
+entity_name: "Sample Entity (Pty) Ltd"
+sharepoint_folder_id: "sample-folder-id"
+measurement_period:
+  start: 2025-10-01
+  end: 2026-09-30
+prior_period:
+  start: 2024-10-01
+  end: 2025-09-30
+financials:
+  turnover: 120000000
+  npat_current: 15000000
+  npat_5yr_avg: 13000000
+  leviable_payroll: 24000000
+scorecard_applied: ICT_GENERIC
+yes_participating: true
+alerts:
+  priority_element_breach:
+    - raphael.feldman@core.co.za
+  cert_expiry:
+    - procurement@sample.example
+  level_drop:
+    - exec@sample.example
+branding:
+  folder: "./branding"
+calc_sheet_protection_password: "dev-only-change-me"

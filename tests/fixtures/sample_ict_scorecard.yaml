@@ -1,0 +1,48 @@
+version: "ICT-2022-amended"
+level_thresholds:
+  1: 100
+  2: 95
+  3: 90
+  4: 80
+  5: 75
+  6: 70
+  7: 55
+  8: 40
+  non_compliant: 0
+elements:
+  ownership:
+    total_points: 25
+    priority: true
+    sub_minimum_pct: 40
+    indicators:
+      black_voting_rights:
+        target_pct: 25.1
+        weighting: 4
+      black_women_voting_rights:
+        target_pct: 10
+        weighting: 2
+      black_economic_interest:
+        target_pct: 25.1
+        weighting: 4
+      black_women_economic_interest:
+        target_pct: 10
+        weighting: 2
+      net_value:
+        target_pct: 25
+        weighting: 8
+      new_entrants:
+        target_pct: 2
+        weighting: 2
+      designated_groups:
+        target_pct: 3
+        weighting: 3
+recognition_levels:
+  1: 1.35
+  2: 1.25
+  3: 1.10
+  4: 1.00
+  5: 0.80
+  6: 0.60
+  7: 0.50
+  8: 0.10
+  non_compliant: 0.0
