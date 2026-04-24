@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bee_tracker"
+version = "0.1.0"
+description = "B-BBEE ICT Sector Code Tracker"
+requires-python = ">=3.9"
+dependencies = [
+    "openpyxl>=3.1",
+    "pandas>=2.0",
+    "msal>=1.26",
+    "requests>=2.31",
+    "pyyaml>=6.0",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+    "responses>=0.25",
+]
+
+[project.scripts]
+bee-calculate-score = "bee_tracker.cli.calculate_score:main"
+bee-validate-data = "bee_tracker.cli.validate_data:main"
+bee-run-queue-daemon = "bee_tracker.cli.run_queue_daemon:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
