@@ -6,6 +6,7 @@ from ..errors import GraphError, ConcurrencyError
 
 
 BASE_URL = "https://graph.microsoft.com/v1.0"
+DEFAULT_TIMEOUT = (10, 60)   # (connect, read) in seconds
 
 
 @dataclass(frozen=True)
@@ -33,14 +34,15 @@ class GraphClient:
 
     def download_item(self, drive_id: str, item_id: str) -> tuple[bytes, ItemMetadata]:
         meta_url = f"{BASE_URL}/drives/{drive_id}/items/{item_id}"
-        resp = self._session.get(meta_url, headers=self._headers())
+        resp = self._session.get(meta_url, headers=self._headers(), timeout=DEFAULT_TIMEOUT)
         if resp.status_code != 200:
             raise GraphError(f"Metadata fetch failed ({resp.status_code}): {resp.text}")
         meta = resp.json()
         dl_url = meta.get("@microsoft.graph.downloadUrl")
         if not dl_url:
             raise GraphError("No downloadUrl in item metadata")
-        dl = self._session.get(dl_url)
+        # pre-signed URL — no bearer needed
+        dl = self._session.get(dl_url, timeout=DEFAULT_TIMEOUT)
         if dl.status_code != 200:
             raise GraphError(f"Download failed ({dl.status_code})")
         return dl.content, ItemMetadata(
@@ -56,7 +58,7 @@ class GraphClient:
             "If-Match": if_match,
             "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         })
-        resp = self._session.put(url, data=content, headers=headers)
+        resp = self._session.put(url, data=content, headers=headers, timeout=DEFAULT_TIMEOUT)
         if resp.status_code == 412:
             raise ConcurrencyError(
                 "Workbook was modified remotely during run (If-Match precondition failed)"
@@ -71,7 +73,7 @@ class GraphClient:
 
     def list_folders(self, drive_id: str, folder_id: str) -> list[FolderChild]:
         url = f"{BASE_URL}/drives/{drive_id}/items/{folder_id}/children"
-        resp = self._session.get(url, headers=self._headers())
+        resp = self._session.get(url, headers=self._headers(), timeout=DEFAULT_TIMEOUT)
         if resp.status_code != 200:
             raise GraphError(f"List failed ({resp.status_code}): {resp.text}")
         return [
