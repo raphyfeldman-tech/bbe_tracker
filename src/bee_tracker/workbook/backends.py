@@ -6,7 +6,7 @@ LocalFolderBackend is used in tests and for local dev — reads/writes
 directly from a folder that mirrors the SharePoint tree.
 """
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from openpyxl import Workbook, load_workbook
@@ -84,7 +84,10 @@ class GraphBackend(WorkbookBackend):
         drive_id, item_id = self._resolve(handle.entity_name)
         buf = BytesIO()
         handle.workbook.save(buf)
-        self._client.upload_item(
+        meta = self._client.upload_item(
             drive_id, item_id, buf.getvalue(),
             if_match=handle.original_token or "*",
         )
+        # Refresh the token so subsequent saves of the same handle don't
+        # fail with a 412 against the previous version we just wrote.
+        handle.original_token = meta.etag
