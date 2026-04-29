@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from enum import Enum
 from openpyxl import Workbook
 
+from ..workbook.schema import EXPECTED_SHEET_NAMES as EXPECTED_SHEETS
+
 
 class Severity(Enum):
     ERROR = "error"
@@ -16,21 +18,6 @@ class Finding:
     sheet: str | None
     row: int | None
     message: str
-
-
-EXPECTED_SHEETS = [
-    "Dashboard", "GapAnalysis", "WhatIf",
-    "Ownership", "Employees", "MgmtControl_Summary",
-    "Training", "Learnerships", "Bursaries",
-    "Suppliers", "Procurement",
-    "ESD_Contributions", "SED_Contributions", "YES_Initiative",
-    "Evidence",
-    "Calc_Ownership", "Calc_MgmtControl", "Calc_SkillsDev",
-    "Calc_ESD", "Calc_SED", "Calc_WhatIf",
-    "History", "Settings",
-    "Ref_Scorecard", "Ref_RecognitionLevels", "ChangeLog",
-    "RunQueue",
-]
 
 # Which sheets carry evidence_id references
 EVIDENCE_REF_SHEETS = [

@@ -3,7 +3,13 @@ from openpyxl import Workbook
 import pandas as pd
 
 
-def _read_table(wb: Workbook, sheet: str) -> pd.DataFrame:
+def read_table(wb: Workbook, sheet: str) -> pd.DataFrame:
+    """Read a sheet's used range into a DataFrame.
+
+    Headers come from row 1. Trailing fully-blank rows are dropped. Empty
+    sheets that have only a header row return a 0-row DataFrame with named
+    columns.
+    """
     ws = wb[sheet]
     rows = list(ws.iter_rows(values_only=True))
     if not rows:
@@ -14,4 +20,4 @@ def _read_table(wb: Workbook, sheet: str) -> pd.DataFrame:
 
 
 def read_ownership(wb: Workbook) -> pd.DataFrame:
-    return _read_table(wb, "Ownership")
+    return read_table(wb, "Ownership")
