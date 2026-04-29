@@ -56,6 +56,20 @@ elements:
       black_junior_mgmt:
         target_pct: 88
         weighting: 4
+  skills_development:
+    total_points: 15
+    priority: true
+    sub_minimum_pct: 40
+    indicators:
+      training_spend_pct:
+        target_pct: 6.0
+        weighting: 8
+      learnership_participation_pct:
+        target_pct: 2.5
+        weighting: 4
+      bursary_spend_pct:
+        target_pct: 2.5
+        weighting: 3
 recognition_levels:
   1: 1.35
   2: 1.25
