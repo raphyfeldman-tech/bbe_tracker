@@ -61,11 +61,27 @@ def process_one_entity(*, root: Path, entity_name: str) -> int:
     return processed
 
 
+def process_all_entities(*, root: Path) -> int:
+    """Iterate every directory under root/entities/ and call process_one_entity."""
+    entities_root = root / "entities"
+    if not entities_root.exists():
+        return 0
+    total = 0
+    for child in sorted(entities_root.iterdir()):
+        if not child.is_dir():
+            continue
+        try:
+            total += process_one_entity(root=root, entity_name=child.name)
+        except Exception:
+            log.exception("Entity %s failed; continuing", child.name)
+    return total
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bee-run-queue-daemon")
     parser.add_argument("--root", type=Path, required=True)
-    parser.add_argument("--entity", required=True,
-                        help="Plan 1 processes a single entity")
+    parser.add_argument("--entity", default=None,
+                        help="Process only this entity (default: process all entities under root/entities/)")
     parser.add_argument("--interval", type=int, default=60,
                         help="Seconds between polls")
     parser.add_argument("--once", action="store_true",
@@ -79,7 +95,10 @@ def main(argv: list[str] | None = None) -> int:
 
     while True:
         try:
-            n = process_one_entity(root=args.root, entity_name=args.entity)
+            if args.entity:
+                n = process_one_entity(root=args.root, entity_name=args.entity)
+            else:
+                n = process_all_entities(root=args.root)
             if n:
                 log.info("Processed %d request(s)", n)
         except Exception:
