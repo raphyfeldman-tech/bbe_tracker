@@ -91,3 +91,35 @@ class GraphBackend(WorkbookBackend):
         # Refresh the token so subsequent saves of the same handle don't
         # fail with a 412 against the previous version we just wrote.
         handle.original_token = meta.etag
+
+    @classmethod
+    def from_env(cls, locator_yaml_path: Path) -> "GraphBackend":
+        """Build a GraphBackend from environment variables + a locator YAML.
+
+        Required env vars:
+          GRAPH_TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET
+
+        Locator YAML format:
+          entity_a:
+            drive_id: "<drive id>"
+            item_id: "<item id of BEE_Tracker.xlsx>"
+          entity_b:
+            ...
+        """
+        import os
+        import yaml
+        from ..graph.auth import GraphAuth
+        from ..graph.client import GraphClient
+
+        auth = GraphAuth(
+            tenant_id=os.environ["GRAPH_TENANT_ID"],
+            client_id=os.environ["GRAPH_CLIENT_ID"],
+            client_secret=os.environ["GRAPH_CLIENT_SECRET"],
+        )
+        client = GraphClient(auth)
+        locator_data = yaml.safe_load(Path(locator_yaml_path).read_text()) or {}
+        entity_locator = {
+            name: (cfg["drive_id"], cfg["item_id"])
+            for name, cfg in locator_data.items()
+        }
+        return cls(client, entity_locator)

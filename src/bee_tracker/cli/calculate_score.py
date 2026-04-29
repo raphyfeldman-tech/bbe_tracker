@@ -28,13 +28,15 @@ log = logging.getLogger("bee_tracker.calculate_score")
 
 
 def run_score(*, root: Path, entity_name: str, requested_by: str,
-              whatif: bool = False) -> None:
+              whatif: bool = False,
+              backend=None) -> None:
     scorecard = load_scorecard(root / "ict_scorecard.yaml")
     gs = load_group_settings(
         root / "entities" / entity_name / "group_settings.yaml"
     )
 
-    backend = LocalFolderBackend(root)
+    if backend is None:
+        backend = LocalFolderBackend(root)
     handle = backend.open_entity_workbook(entity_name)
     wb = handle.workbook
 
@@ -123,6 +125,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--whatif", action="store_true",
                         help="Apply WhatIf sheet overrides as a scenario, "
                              "writing Calc_WhatIf and a scenario column on Dashboard")
+    parser.add_argument("--backend", choices=["local", "graph"], default="local",
+                        help="Workbook storage backend (default: local)")
+    parser.add_argument("--graph-locator", type=Path, default=Path("graph_locator.yaml"),
+                        help="YAML mapping entity_name → drive_id/item_id (used with --backend graph)")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -130,8 +136,15 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    if args.backend == "graph":
+        from ..workbook.backends import GraphBackend
+        backend = GraphBackend.from_env(args.graph_locator)
+    else:
+        backend = LocalFolderBackend(args.root)
+
     run_score(root=args.root, entity_name=args.entity,
-              requested_by=args.requested_by, whatif=args.whatif)
+              requested_by=args.requested_by, whatif=args.whatif,
+              backend=backend)
     return 0
 
 
