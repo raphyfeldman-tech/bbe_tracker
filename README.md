@@ -1,8 +1,9 @@
-# BEE Tracker — Plan 1 MVP
+# BEE Tracker — Plan 1 + Plan 2
 
-End-to-end walking skeleton for the B-BBEE ICT Sector Code Tracker.
-Plan 1 covers Ownership scoring only; later plans fill in the remaining
-elements, reports, and alerts.
+End-to-end BEE scorecard tool: scores all 5 ICT-Generic elements (Ownership,
+Management Control, Skills Development, ESD/PP, SED), applies Y.E.S. tier
+level-up, runs WhatIf scenarios, and generates a Dashboard with BEE level +
+top-5 gaps.
 
 ## Components
 
@@ -55,28 +56,58 @@ bee-validate-data --root /tmp/bee --entity sample --report /tmp/bee/validation.h
 
 See [office_scripts/README.md](office_scripts/README.md).
 
+## Run a full scorecard
+
+```bash
+# One-shot recalc (single entity)
+bee-calculate-score --root /tmp/bee --entity sample --requested-by you@example -v
+
+# With WhatIf scenario
+bee-calculate-score --root /tmp/bee --entity sample --whatif -v
+
+# Multi-entity daemon (processes every entity under /tmp/bee/entities/)
+bee-run-queue-daemon --root /tmp/bee --interval 60
+
+# Validation report
+bee-validate-data --root /tmp/bee --entity sample --report /tmp/bee/validation.html
+```
+
 ## Test
 
 ```bash
 pytest -v
 ```
 
-(52 tests at the end of Plan 1.)
+(144 tests at the end of Plan 2.)
 
-## Plan 1 scope (what's done, what's not)
+## Scope (Plan 1 + Plan 2)
 
-Done:
-- Ownership scoring with sub-minimum check (BEE math verified by hand-calculated fixtures)
-- Dashboard (entity, total score, priority status, element breakdown, last-run footer)
-- RunQueue round-trip via Office Script + daemon
-- Structural + evidence-id validation with HTML report
-- LocalFolderBackend (used in tests and CLI today); GraphBackend implemented but not yet wired into the CLI
+What's done:
+- All 5 element scorers (Ownership, Management Control, Skills Development, ESD/PP, SED) with hand-calculated test fixtures
+- Y.E.S. tier level-up logic (3 tiers)
+- Total score → BEE Level (1–8 / non-compliant) lookup
+- WhatIf scenario path (`--whatif` flag) with Dashboard scenario column
+- GapAnalysis: cost-of-point ranker for financial levers (procurement / skills / ESD / SED) + non-financial opportunities (headcount / ownership)
+- Dashboard with BEE Level tile + top-5 gaps + element breakdown
+- Validation: structural, evidence-id, cert expiry, demographics, NPAT/payroll, ESD/SED thresholds, Y.E.S. age range, HTML report
+- Multi-entity daemon (no `--entity` arg → process all under `entities/`)
+- GraphBackend wired into `bee-calculate-score --backend graph` (with `from_env(locator_yaml)`)
+- Office Script Run Assessment button + RunQueue round-trip
+- 144 tests, all green
 
-Not in Plan 1 (deferred to Plans 2 & 3):
-- Management Control, Skills Development, ESD, SED, YES scoring
-- WhatIf scenario runs
-- GapAnalysis with cost-of-point ranker
-- PDF reports, email alerts, evidence-pack export
-- Multi-entity iteration in the daemon
-- GraphBackend wiring into the CLI (currently only LocalFolderBackend is used)
-- Real SharePoint integration test
+Deferred to Plan 3:
+- PDF reports with per-entity branding
+- Email alerts (priority breach / cert expiry / level drop)
+- Evidence-pack export (`export_evidence_pack.py`)
+- Service-install scripts for the daemon (Windows Service / systemd)
+- Scheduled-task setup for nightly recalc + daily cert-expiry alerts
+- Real SharePoint integration smoke test against a tenant
+- Black-female + EAP weighting in Management Control
+- Category B–G split + salary cap in Skills Development
+- 30-day payment bonus in PP
+- 429/503 retry on Graph calls
+- Pagination on `list_folders`
+- Byte-determinism flake investigation (template generator)
+- GraphBackend wiring for `bee-validate-data` and `bee-run-queue-daemon` (currently `bee-calculate-score` only)
+- WhatIf sheet header row (`["key", "value"]`) auto-created by template generator
+- Generic `write_calc_element(wb, sheet, result)` writer to deduplicate the 5 per-element writers

@@ -10,6 +10,10 @@ src/bee_tracker/
 │   └── run_queue_daemon.py
 ├── config.py           # YAML loaders + frozen dataclasses
 ├── errors.py           # Exception hierarchy
+├── gap_analysis/       # Gap analysis + ranker
+│   ├── financial.py    # Cost-of-point Action generator (procurement / skills / ESD / SED)
+│   ├── non_financial.py # Opportunity generator (headcount / ownership)
+│   └── ranker.py       # Top-N ranking across Action + Opportunity
 ├── graph/              # Microsoft Graph wrapper
 │   ├── auth.py         # MSAL client-credentials, token cache
 │   └── client.py       # REST: download / upload (If-Match) / list folders
@@ -19,13 +23,22 @@ src/bee_tracker/
 ├── scoring/            # Element scoring engine
 │   ├── base.py         # ElementScorer ABC + ElementResult dataclass
 │   ├── ownership.py    # Ownership scorer
+│   ├── management_control.py # Management Control scorer (5 indicators)
+│   ├── skills_development.py # Skills Development scorer (3 indicators)
+│   ├── procurement.py  # Procurement / PP scorer
+│   ├── esd_pp.py       # ESD + PP combined scorer
+│   ├── sed.py          # SED scorer
+│   ├── yes_initiative.py # Y.E.S. tier level-up logic
+│   ├── level.py        # total_score_to_level(score, scorecard)
 │   └── registry.py     # element_name → scorer dispatch
 ├── validation/
-│   ├── rules.py        # Structural + evidence-id rules
+│   ├── rules.py        # structural, evidence-id, cert expiry, demographics, settings, threshold checks
 │   └── report.py       # HTML report rendering
+├── whatif.py           # apply_overrides(inputs, overrides) for WhatIf scenarios
 └── workbook/
     ├── backends.py     # WorkbookBackend ABC + Local + Graph
     ├── reader.py       # Sheet → DataFrame readers
+    ├── schema.py       # SHEETS table (relocated from scripts/)
     └── writer.py       # DataFrame/result → sheet writers
 ```
 
@@ -34,17 +47,25 @@ src/bee_tracker/
 - **`WorkbookBackend`** — indirection over file storage.
   Production: `GraphBackend`. Tests + local dev: `LocalFolderBackend`.
 - **`ElementScorer`** — one implementation per BEE element.
-  Plan 1 ships `OwnershipScorer`. Plan 2 adds the others; the registry
-  lookup in `scoring.registry.default_registry()` is the only wiring point.
+  Plan 2 ships all 5 (`OwnershipScorer`, `ManagementControlScorer`,
+  `SkillsDevelopmentScorer`, `EsdPpScorer`, `SedScorer`); all are
+  registered in `scoring.registry.default_registry()`.
+- **`Action`** (financial) and **`Opportunity`** (non-financial) value
+  objects in `gap_analysis/` — surfaced by the ranker into the Dashboard's
+  top-5 gaps table.
+- **`apply_overrides(inputs, overrides)`** — applies WhatIf overrides to
+  a copy of the scoring inputs before the scorer runs.
+- **`total_score_to_level(score, scorecard)`** — looks up BEE Level
+  (1–8 / non-compliant) from the scorecard's level table.
 - **`RunQueue` functions** — `read_queued`, `mark_running`, `mark_completed`,
   `mark_failed`. Row identity is `request_id`.
 
 ## Testing
 
-- `pytest` runs the suite (52 tests at end of Plan 1).
+- `pytest` runs the suite (144 tests at end of Plan 2).
 - Graph client is tested with `responses` — no real network.
 - Backend abstraction means end-to-end tests run against a temp folder;
-  GraphBackend gets exercised by targeted unit tests only. Plan 2/3 will
+  GraphBackend gets exercised by targeted unit tests only. Plan 3 will
   add a manual smoke test against a real SharePoint tenant.
 
 ## Regenerating the workbook template
@@ -60,13 +81,19 @@ regenerations are byte-identical (verified by `test_template_is_byte_determinist
 If you see that test flake on the full suite, rerun in isolation — it's a
 known minor instability we're tracking for follow-up.
 
-## Adding a new element (Plan 2 preview)
+## Adding a new element
 
-1. New `src/bee_tracker/scoring/<element>.py` implementing `ElementScorer`.
+The Plan 2 scorers are now the canonical reference. The simplest pattern
+is `scoring/management_control.py` — read it first when adding a new
+element or sub-indicator.
+
+1. New `src/bee_tracker/scoring/<element>.py` implementing `ElementScorer`
+   (model on `management_control.py`).
 2. New reader function in `workbook/reader.py`.
-3. New writer function in `workbook/writer.py`.
+3. New writer function in `workbook/writer.py` (Plan 3 will deduplicate
+   these into a generic `write_calc_element`).
 4. Register in `scoring/registry.default_registry()`.
-5. Add fixtures + tests.
+5. Add fixtures + tests (hand-calculate the expected score first).
 6. Extend `cli/calculate_score.run_score` to dispatch to the new scorer.
 
 ## Python version
@@ -80,25 +107,35 @@ When the runtime moves to 3.11+, the `from __future__` imports can be
 removed and `datetime.utcnow()` (deprecated in 3.12) can be replaced with
 `datetime.now(timezone.utc)`.
 
-## Deferred tech debt (carry to Plan 2)
+## Deferred tech debt (carry to Plan 3)
 
-- `GraphBackend` is unit-tested with mocks but not wired into the CLI; CLI
-  uses `LocalFolderBackend` only. Plan 2 wires it up.
-- `_read_table` in `workbook/reader.py` is private; Plan 2 will need it for
-  many readers — consider promoting to public.
-- `make_template.py`'s SHEETS table lives in `scripts/`, not on
-  `pythonpath`; Plan 2 should move it under `src/bee_tracker/workbook/`.
-- Test coverage on `make_template.py` covers 4 of 13 header-bearing sheets;
-  Plan 2 should iterate the schema for full coverage.
-- 429 / 503 retry on Graph calls is not implemented; Plan 2 must add this
-  before the daemon runs unattended in production.
-- `LocalFolderBackend.save` does not check mtime drift; mismatch with
-  `GraphBackend` semantics. Add a token check there for symmetry.
-- The byte-determinism test (`test_template_is_byte_deterministic`) flakes
-  occasionally; investigate whether openpyxl is overwriting our pinned
-  `wb.properties.modified` during save.
-- Coverage for `GraphBackend._resolve` and eTag plumbing — three small
-  mock-based unit tests would close the gap.
+- PDF report generator + per-entity branding (`generate_report.py`)
+- Email alerts (`send_alerts.py`) — priority breach / cert expiry / level drop
+- Evidence-pack export script (`export_evidence_pack.py`)
+- Service-install scripts for the daemon (Windows Service or systemd unit)
+- Scheduled-task setup for nightly recalc and daily cert-expiry alerts
+- Real SharePoint integration smoke test against a tenant
+- Black-female + EAP weighting in `management_control.py`
+- Category B–G split + salary cap in `skills_development.py`
+- 30-day payment bonus indicator in `esd_pp.py`
+- 429 / 503 retry-with-backoff in `graph/client.py`
+- Pagination via `@odata.nextLink` on `GraphClient.list_folders`
+- GraphBackend wiring for `bee-validate-data` and `bee-run-queue-daemon`
+- WhatIf sheet's header row auto-created by `make_template.py`
+- Byte-determinism flake on `test_template_is_byte_deterministic` —
+  openpyxl resets `wb.properties.modified` at save time despite Plan 1's
+  pin; the in-process test passes only because both saves share the same
+  wall-clock second
+- Generic `write_calc_element(wb, sheet, result)` writer to deduplicate
+  the 5 per-element writers
+- Promote `Action`/`Opportunity` from `gap_analysis/` to a typed CSV
+  export for the Dashboard's "Top Gaps" table
+- Drop the unused `apply_overrides` import from
+  `gap_analysis/financial.py` (cosmetic)
+- Replace `cfg.sub_minimum_pct or 40` fallback with explicit
+  `None`-check in scorers (a literal `0` value is currently coerced)
+- Replace `datetime.utcnow()` with `datetime.now(timezone.utc)` once
+  Python ≥3.12 is the target
 
 ## Run-time troubleshooting
 
@@ -109,3 +146,22 @@ removed and `datetime.utcnow()` (deprecated in 3.12) can be replaced with
   `GRAPH_CLIENT_SECRET` env vars.
 - **`bee-calculate-score: command not found`** — re-run `pip install -e ".[dev]"`
   inside the venv.
+
+## Plan 2 simplifications (deferred to Plan 3)
+
+The following are Plan 3 stretch items — Plan 2 ships a workable
+baseline that scores the elements correctly for typical Generic
+entities but doesn't yet model every edge case in the ICT Sector Code.
+
+- **Management Control:** no EAP weighting, no black-female sub-indicators,
+  no disabled-employee indicator. 5 indicators (board, exec directors,
+  senior/middle/junior mgmt) — see Plan 2 plan §Task 4.
+- **Skills Development:** 3 indicators (training spend %, learnership
+  participation %, bursary spend %). No Category B–G split, no salary cap
+  during training, no separate black-women target.
+- **ESD/PP:** 5 indicators (PP totals, 51% black, EME/QSE, ED, SD).
+  No 30-day payment bonus, no designated-group sub-indicator, no QSE
+  thresholds detail.
+- **SED:** 1 indicator. No 5-year average NPAT denominator override.
+- **Y.E.S.:** 3-tier ladder. Doesn't model the "must maintain prior-year
+  contributor status" qualifier.
