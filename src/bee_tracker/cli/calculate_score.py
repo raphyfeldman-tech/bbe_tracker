@@ -6,8 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from ..config import load_scorecard, load_group_settings
 from ..workbook.backends import LocalFolderBackend
-from ..workbook.reader import read_ownership
-from ..workbook.writer import write_calc_ownership
+from ..workbook.reader import read_ownership, read_employees
+from ..workbook.writer import write_calc_ownership, write_calc_mgmt_control
 from ..rendering.dashboard import DashboardContext, render_dashboard
 from ..scoring.registry import default_registry
 
@@ -25,7 +25,10 @@ def run_score(*, root: Path, entity_name: str, requested_by: str) -> None:
     handle = backend.open_entity_workbook(entity_name)
     wb = handle.workbook
 
-    inputs = {"ownership": read_ownership(wb)}
+    inputs = {
+        "ownership": read_ownership(wb),
+        "employees": read_employees(wb),
+    }
     registry = default_registry()
     results = []
     for element_name, scorer in registry.items():
@@ -33,6 +36,8 @@ def run_score(*, root: Path, entity_name: str, requested_by: str) -> None:
         results.append(result)
         if element_name == "ownership":
             write_calc_ownership(wb, result)
+        elif element_name == "management_control":
+            write_calc_mgmt_control(wb, result)
 
     ctx = DashboardContext(
         entity_name=gs.entity_name,

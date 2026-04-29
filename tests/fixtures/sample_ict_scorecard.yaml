@@ -36,6 +36,26 @@ elements:
       designated_groups:
         target_pct: 3
         weighting: 3
+  management_control:
+    total_points: 19
+    priority: false
+    sub_minimum_pct: null
+    indicators:
+      black_board_voting:
+        target_pct: 50
+        weighting: 4
+      black_executive_directors:
+        target_pct: 50
+        weighting: 3
+      black_senior_mgmt:
+        target_pct: 60
+        weighting: 4
+      black_middle_mgmt:
+        target_pct: 75
+        weighting: 4
+      black_junior_mgmt:
+        target_pct: 88
+        weighting: 4
 recognition_levels:
   1: 1.35
   2: 1.25
