@@ -13,6 +13,7 @@ class DashboardContext:
     last_run_at: datetime
     last_run_by: str
     element_results: list[ElementResult]
+    scenario_element_results: list[ElementResult] | None = None
 
 
 def _clear(wb: Workbook, sheet: str) -> None:
@@ -61,6 +62,20 @@ def render_dashboard(wb: Workbook, ctx: DashboardContext) -> None:
     for r in ctx.element_results:
         ws.append([r.element.title(), r.subtotal, r.max_points])
     ws.append([])
+
+    # Scenario column when WhatIf scenario was run
+    if ctx.scenario_element_results:
+        ws.append(["Scenario (WhatIf)"])
+        ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
+        ws.append(["Element", "Scenario Subtotal", "Δ vs Baseline"])
+        for header_col in (1, 2, 3):
+            ws.cell(row=ws.max_row, column=header_col).font = Font(bold=True)
+        baseline_by_name = {r.element: r.subtotal for r in ctx.element_results}
+        for r in ctx.scenario_element_results:
+            baseline = baseline_by_name.get(r.element, 0.0)
+            delta = round(r.subtotal - baseline, 4)
+            ws.append([r.element.title(), r.subtotal, delta])
+        ws.append([])
 
     # Run record
     ws.append(["Last recalc:", ctx.last_run_at.isoformat(), "by", ctx.last_run_by])

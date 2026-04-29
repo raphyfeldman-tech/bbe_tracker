@@ -57,3 +57,23 @@ def test_run_score_does_not_touch_ownership_input(tmp_path: Path):
     wb_after = load_workbook(root / "entities" / "sample" / "BEE_Tracker.xlsx")
     after = [[c.value for c in row] for row in wb_after["Ownership"].iter_rows()]
     assert before == after
+
+
+def test_run_score_with_whatif_writes_calc_whatif(tmp_path):
+    root = _seed_entity(tmp_path)
+    # add a WhatIf override row that bumps net_value_pct
+    from openpyxl import load_workbook as _lw
+    wb_path = root / "entities" / "sample" / "BEE_Tracker.xlsx"
+    wb = _lw(wb_path)
+    wb["WhatIf"].append(["key", "value"])  # write headers if missing
+    wb["WhatIf"].append(["ownership.net_value_pct", 25.0])
+    wb.save(wb_path)
+
+    run_score(root=root, entity_name="sample",
+              requested_by="tester@example", whatif=True)
+    wb = _lw(wb_path)
+    calc_whatif = wb["Calc_WhatIf"]
+    assert calc_whatif.max_row >= 2
+    headers = [c.value for c in calc_whatif[1]]
+    assert headers == ["element", "scenario_subtotal",
+                       "scenario_max_points", "sub_minimum_breach"]

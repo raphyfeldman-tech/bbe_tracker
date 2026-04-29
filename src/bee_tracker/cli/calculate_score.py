@@ -10,20 +10,22 @@ from ..workbook.reader import (
     read_ownership, read_employees, read_training,
     read_learnerships, read_bursaries, read_settings,
     read_suppliers, read_procurement, read_esd_contributions,
-    read_sed_contributions,
+    read_sed_contributions, read_whatif,
 )
 from ..workbook.writer import (
     write_calc_ownership, write_calc_mgmt_control, write_calc_skills_dev,
-    write_calc_esd, write_calc_sed,
+    write_calc_esd, write_calc_sed, write_calc_whatif,
 )
 from ..rendering.dashboard import DashboardContext, render_dashboard
 from ..scoring.registry import default_registry
+from ..whatif import apply_overrides
 
 
 log = logging.getLogger("bee_tracker.calculate_score")
 
 
-def run_score(*, root: Path, entity_name: str, requested_by: str) -> None:
+def run_score(*, root: Path, entity_name: str, requested_by: str,
+              whatif: bool = False) -> None:
     scorecard = load_scorecard(root / "ict_scorecard.yaml")
     gs = load_group_settings(
         root / "entities" / entity_name / "group_settings.yaml"
@@ -61,6 +63,15 @@ def run_score(*, root: Path, entity_name: str, requested_by: str) -> None:
         elif element_name == "socio_economic_dev":
             write_calc_sed(wb, result)
 
+    scenario_results = None
+    if whatif:
+        whatif_df = read_whatif(wb)
+        scenario_inputs = apply_overrides(inputs, whatif_df)
+        scenario_results = []
+        for element_name, scorer in registry.items():
+            scenario_results.append(scorer.score(scenario_inputs, scorecard))
+        write_calc_whatif(wb, scenario_results)
+
     ctx = DashboardContext(
         entity_name=gs.entity_name,
         measurement_period=(
@@ -70,6 +81,7 @@ def run_score(*, root: Path, entity_name: str, requested_by: str) -> None:
         last_run_at=datetime.utcnow(),
         last_run_by=requested_by,
         element_results=results,
+        scenario_element_results=scenario_results,
     )
     render_dashboard(wb, ctx)
 
@@ -86,6 +98,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="Entity folder name under entities/")
     parser.add_argument("--requested-by", default="cli",
                         help="Identifier recorded on Dashboard and ChangeLog")
+    parser.add_argument("--whatif", action="store_true",
+                        help="Apply WhatIf sheet overrides as a scenario, "
+                             "writing Calc_WhatIf and a scenario column on Dashboard")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -93,7 +108,8 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    run_score(root=args.root, entity_name=args.entity, requested_by=args.requested_by)
+    run_score(root=args.root, entity_name=args.entity,
+              requested_by=args.requested_by, whatif=args.whatif)
     return 0
 
 

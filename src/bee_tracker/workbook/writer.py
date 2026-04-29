@@ -73,3 +73,12 @@ def write_calc_sed(wb: Workbook, result: ElementResult) -> None:
     ws.append(["SUBTOTAL", result.subtotal, None])
     ws.append(["MAX_POINTS", result.max_points, None])
     ws.append(["SUB_MINIMUM_BREACH", result.sub_minimum_breach, None])
+
+
+def write_calc_whatif(wb: Workbook, scenario_results: list[ElementResult]) -> None:
+    """Overwrite Calc_WhatIf with scenario element subtotals."""
+    _clear_sheet(wb, "Calc_WhatIf")
+    ws = wb["Calc_WhatIf"]
+    ws.append(["element", "scenario_subtotal", "scenario_max_points", "sub_minimum_breach"])
+    for r in scenario_results:
+        ws.append([r.element, r.subtotal, r.max_points, r.sub_minimum_breach])
