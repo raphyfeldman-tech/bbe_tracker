@@ -4,6 +4,7 @@ from .ownership import OwnershipScorer
 from .management_control import MgmtControlScorer
 from .skills_development import SkillsDevScorer
 from .esd_pp import ESDPPScorer
+from .sed import SEDScorer
 
 
 def default_registry() -> dict[str, ElementScorer]:
@@ -12,4 +13,5 @@ def default_registry() -> dict[str, ElementScorer]:
         "management_control": MgmtControlScorer(),
         "skills_development": SkillsDevScorer(),
         "enterprise_supplier_dev": ESDPPScorer(),
+        "socio_economic_dev": SEDScorer(),
     }

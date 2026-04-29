@@ -90,6 +90,14 @@ elements:
       sd_spend_npat_pct:
         target_pct: 2
         weighting: 10
+  socio_economic_dev:
+    total_points: 5
+    priority: false
+    sub_minimum_pct: null
+    indicators:
+      sed_spend_npat_pct:
+        target_pct: 1.5
+        weighting: 5
 recognition_levels:
   1: 1.35
   2: 1.25
