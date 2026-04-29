@@ -9,9 +9,11 @@ from ..workbook.backends import LocalFolderBackend
 from ..workbook.reader import (
     read_ownership, read_employees, read_training,
     read_learnerships, read_bursaries, read_settings,
+    read_suppliers, read_procurement, read_esd_contributions,
 )
 from ..workbook.writer import (
     write_calc_ownership, write_calc_mgmt_control, write_calc_skills_dev,
+    write_calc_esd,
 )
 from ..rendering.dashboard import DashboardContext, render_dashboard
 from ..scoring.registry import default_registry
@@ -36,6 +38,9 @@ def run_score(*, root: Path, entity_name: str, requested_by: str) -> None:
         "training": read_training(wb),
         "learnerships": read_learnerships(wb),
         "bursaries": read_bursaries(wb),
+        "suppliers": read_suppliers(wb),
+        "procurement": read_procurement(wb),
+        "esd_contributions": read_esd_contributions(wb),
         "settings": read_settings(wb),
     }
     registry = default_registry()
@@ -49,6 +54,8 @@ def run_score(*, root: Path, entity_name: str, requested_by: str) -> None:
             write_calc_mgmt_control(wb, result)
         elif element_name == "skills_development":
             write_calc_skills_dev(wb, result)
+        elif element_name == "enterprise_supplier_dev":
+            write_calc_esd(wb, result)
 
     ctx = DashboardContext(
         entity_name=gs.entity_name,

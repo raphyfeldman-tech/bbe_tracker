@@ -70,6 +70,26 @@ elements:
       bursary_spend_pct:
         target_pct: 2.5
         weighting: 3
+  enterprise_supplier_dev:
+    total_points: 47
+    priority: true
+    sub_minimum_pct: 40
+    indicators:
+      total_b_bbee_pp_pct:
+        target_pct: 80
+        weighting: 19
+      spend_with_51pct_black:
+        target_pct: 40
+        weighting: 9
+      spend_with_emes_qses:
+        target_pct: 15
+        weighting: 4
+      ed_spend_npat_pct:
+        target_pct: 2
+        weighting: 5
+      sd_spend_npat_pct:
+        target_pct: 2
+        weighting: 10
 recognition_levels:
   1: 1.35
   2: 1.25

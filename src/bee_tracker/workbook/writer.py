@@ -47,3 +47,16 @@ def write_calc_skills_dev(wb: Workbook, result: ElementResult) -> None:
     ws.append(["SUBTOTAL", result.subtotal, None])
     ws.append(["MAX_POINTS", result.max_points, None])
     ws.append(["SUB_MINIMUM_BREACH", result.sub_minimum_breach, None])
+
+
+def write_calc_esd(wb: Workbook, result: ElementResult) -> None:
+    """Overwrite Calc_ESD with the given result."""
+    _clear_sheet(wb, "Calc_ESD")
+    ws = wb["Calc_ESD"]
+    ws.append(["indicator", "points_earned", "max_points_check"])
+    for indicator, points in result.indicator_points.items():
+        ws.append([indicator, points, None])
+    ws.append([])
+    ws.append(["SUBTOTAL", result.subtotal, None])
+    ws.append(["MAX_POINTS", result.max_points, None])
+    ws.append(["SUB_MINIMUM_BREACH", result.sub_minimum_breach, None])
