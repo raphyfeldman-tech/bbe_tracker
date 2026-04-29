@@ -108,3 +108,15 @@ recognition_levels:
   7: 0.50
   8: 0.10
   non_compliant: 0.0
+yes_initiative:
+  tier_1:
+    target_absorption_pct: 2.5
+    levels_up: 1
+  tier_2:
+    target_absorption_pct: 5.0
+    target_multiplier: 1.5
+    levels_up: 1
+  tier_3:
+    target_absorption_pct: 5.0
+    target_multiplier: 2.0
+    levels_up: 2
