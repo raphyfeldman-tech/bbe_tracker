@@ -21,3 +21,55 @@ def read_table(wb: Workbook, sheet: str) -> pd.DataFrame:
 
 def read_ownership(wb: Workbook) -> pd.DataFrame:
     return read_table(wb, "Ownership")
+
+
+def read_employees(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "Employees")
+
+
+def read_training(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "Training")
+
+
+def read_learnerships(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "Learnerships")
+
+
+def read_bursaries(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "Bursaries")
+
+
+def read_suppliers(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "Suppliers")
+
+
+def read_procurement(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "Procurement")
+
+
+def read_esd_contributions(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "ESD_Contributions")
+
+
+def read_sed_contributions(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "SED_Contributions")
+
+
+def read_yes_initiative(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "YES_Initiative")
+
+
+def read_whatif(wb: Workbook) -> pd.DataFrame:
+    return read_table(wb, "WhatIf")
+
+
+def read_settings(wb: Workbook) -> dict[str, object]:
+    """Settings is a 2-column key/value sheet. Returns a dict.
+
+    The Settings sheet has headers `key` and `value` (per the workbook
+    template). Empty Settings (no rows beyond the header) returns {}.
+    """
+    df = read_table(wb, "Settings")
+    if df.empty or "key" not in df.columns:
+        return {}
+    return dict(zip(df["key"], df["value"]))
