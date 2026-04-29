@@ -18,6 +18,9 @@ from ..workbook.writer import (
 )
 from ..rendering.dashboard import DashboardContext, render_dashboard
 from ..scoring.registry import default_registry
+from ..scoring.level import total_score_to_level
+from ..gap_analysis.financial import enumerate_financial_actions
+from ..gap_analysis.ranker import rank_top_n
 from ..whatif import apply_overrides
 
 
@@ -48,10 +51,10 @@ def run_score(*, root: Path, entity_name: str, requested_by: str,
         "settings": read_settings(wb),
     }
     registry = default_registry()
-    results = []
+    baseline_results = []
     for element_name, scorer in registry.items():
         result = scorer.score(inputs, scorecard)
-        results.append(result)
+        baseline_results.append(result)
         if element_name == "ownership":
             write_calc_ownership(wb, result)
         elif element_name == "management_control":
@@ -72,6 +75,23 @@ def run_score(*, root: Path, entity_name: str, requested_by: str,
             scenario_results.append(scorer.score(scenario_inputs, scorecard))
         write_calc_whatif(wb, scenario_results)
 
+    total_score = round(sum(r.subtotal for r in baseline_results), 4)
+    bee_level = total_score_to_level(total_score, scorecard)
+
+    # Top gaps
+    financial_actions = enumerate_financial_actions(inputs, scorecard, baseline_results)
+    top5 = rank_top_n(financial_actions, n=5)
+    top_gaps = [
+        {
+            "description": a.description,
+            "element": a.element,
+            "rand_required": a.rand_required,
+            "points_gained": a.points_gained,
+            "rand_per_point": a.rand_per_point,
+        }
+        for a in top5
+    ]
+
     ctx = DashboardContext(
         entity_name=gs.entity_name,
         measurement_period=(
@@ -80,14 +100,16 @@ def run_score(*, root: Path, entity_name: str, requested_by: str,
         ),
         last_run_at=datetime.utcnow(),
         last_run_by=requested_by,
-        element_results=results,
+        element_results=baseline_results,
+        bee_level=bee_level,
         scenario_element_results=scenario_results,
+        top_gaps=top_gaps,
     )
     render_dashboard(wb, ctx)
 
     backend.save(handle)
     log.info("Score run complete for entity=%s subtotals=%s", entity_name,
-             {r.element: r.subtotal for r in results})
+             {r.element: r.subtotal for r in baseline_results})
 
 
 def main(argv: list[str] | None = None) -> int:

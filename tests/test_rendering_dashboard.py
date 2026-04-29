@@ -105,3 +105,60 @@ def test_dashboard_renders_scenario_column(tmp_path):
     assert "Scenario (WhatIf)" in text
     assert "20.0" in text or "20" in text  # scenario subtotal
     assert "10.0" in text or "10" in text  # delta = 10.0
+
+
+def test_dashboard_renders_bee_level(tmp_path):
+    out = tmp_path / "wb.xlsx"
+    shutil.copy(FIXTURE, out)
+    wb = load_workbook(out)
+    ctx = DashboardContext(
+        entity_name="Sample",
+        measurement_period="2025-10-01 → 2026-09-30",
+        last_run_at=datetime(2026, 4, 28),
+        last_run_by="r@x",
+        element_results=[
+            ElementResult(element="ownership", indicator_points={},
+                          subtotal=10.0, max_points=25.0, sub_minimum_breach=False),
+        ],
+        bee_level=5,
+    )
+    render_dashboard(wb, ctx)
+    wb.save(out)
+
+    reopened = load_workbook(out)
+    text = "|".join(str(v) for row in reopened["Dashboard"].iter_rows(values_only=True)
+                    for v in row if v is not None)
+    assert "BEE Level:" in text
+    assert "5" in text
+
+
+def test_dashboard_renders_top_gaps(tmp_path):
+    out = tmp_path / "wb.xlsx"
+    shutil.copy(FIXTURE, out)
+    wb = load_workbook(out)
+    ctx = DashboardContext(
+        entity_name="Sample",
+        measurement_period="2025-10-01 → 2026-09-30",
+        last_run_at=datetime(2026, 4, 28),
+        last_run_by="r@x",
+        element_results=[
+            ElementResult(element="ownership", indicator_points={},
+                          subtotal=10.0, max_points=25.0, sub_minimum_breach=False),
+        ],
+        bee_level=5,
+        top_gaps=[
+            {"description": "Shift R840k to Level 1", "element": "enterprise_supplier_dev",
+             "rand_required": 840000, "points_gained": 1.4, "rand_per_point": 600000},
+            {"description": "Add R310k training", "element": "skills_development",
+             "rand_required": 310000, "points_gained": 1.2, "rand_per_point": 258333},
+        ],
+    )
+    render_dashboard(wb, ctx)
+    wb.save(out)
+
+    reopened = load_workbook(out)
+    text = "|".join(str(v) for row in reopened["Dashboard"].iter_rows(values_only=True)
+                    for v in row if v is not None)
+    assert "Top Gaps to Next Level" in text
+    assert "Shift R840k to Level 1" in text
+    assert "Add R310k training" in text

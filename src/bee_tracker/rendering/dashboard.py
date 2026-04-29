@@ -13,7 +13,9 @@ class DashboardContext:
     last_run_at: datetime
     last_run_by: str
     element_results: list[ElementResult]
+    bee_level: int | str = "non_compliant"
     scenario_element_results: list[ElementResult] | None = None
+    top_gaps: list[dict] | None = None
 
 
 def _clear(wb: Workbook, sheet: str) -> None:
@@ -37,6 +39,10 @@ def render_dashboard(wb: Workbook, ctx: DashboardContext) -> None:
     # Total score (sum of element subtotals for now)
     total = sum(r.subtotal for r in ctx.element_results)
     ws.append(["Total Score:", total])
+    ws.append([])
+
+    # BEE level tile
+    ws.append(["BEE Level:", str(ctx.bee_level)])
     ws.append([])
 
     # Priority-element status strip
@@ -75,6 +81,20 @@ def render_dashboard(wb: Workbook, ctx: DashboardContext) -> None:
             baseline = baseline_by_name.get(r.element, 0.0)
             delta = round(r.subtotal - baseline, 4)
             ws.append([r.element.title(), r.subtotal, delta])
+        ws.append([])
+
+    # Top 5 gaps
+    if ctx.top_gaps:
+        ws.append(["Top Gaps to Next Level"])
+        ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
+        ws.append(["Action", "Element", "R Required", "Points", "R / Point"])
+        for header_col in range(1, 6):
+            ws.cell(row=ws.max_row, column=header_col).font = Font(bold=True)
+        for gap in ctx.top_gaps[:5]:
+            ws.append([
+                gap["description"], gap["element"],
+                gap["rand_required"], gap["points_gained"], gap["rand_per_point"],
+            ])
         ws.append([])
 
     # Run record
