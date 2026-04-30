@@ -84,6 +84,44 @@ def write_calc_whatif(wb: Workbook, scenario_results: list[ElementResult]) -> No
         ws.append([r.element, r.subtotal, r.max_points, r.sub_minimum_breach])
 
 
+def write_gap_analysis(
+    wb: Workbook,
+    *,
+    ranked_actions: list,        # list[Action] from gap_analysis.financial
+    opportunities: list,         # list[Opportunity] from gap_analysis.non_financial
+) -> None:
+    """Overwrite the GapAnalysis sheet.
+
+    Section A: ranked financial actions (description | element | R required |
+    points gained | R/point | reason).
+
+    Section B: non-financial opportunities (description | element | points
+    gained | notes).
+    """
+    _clear_sheet(wb, "GapAnalysis")
+    ws = wb["GapAnalysis"]
+
+    # Section A — Ranked financial actions
+    ws.append(["Ranked Financial Actions"])
+    ws.append([
+        "Action", "Element", "R Required", "Points", "R / Point", "Reason",
+    ])
+    for a in ranked_actions:
+        ws.append([
+            a.description, a.element, a.rand_required,
+            a.points_gained, a.rand_per_point, a.reason,
+        ])
+    ws.append([])
+
+    # Section B — Non-financial opportunities
+    ws.append(["Non-Financial Opportunities"])
+    ws.append(["Opportunity", "Element", "Points Gained", "Notes"])
+    for o in opportunities:
+        ws.append([
+            o.description, o.element, o.points_gained, o.notes,
+        ])
+
+
 def append_change_log(wb: Workbook, *, actor: str, scope: str, summary: str,
                       timestamp_iso: str) -> None:
     """Append a row to the ChangeLog sheet. Idempotent: ensures the header

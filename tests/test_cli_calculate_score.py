@@ -154,3 +154,15 @@ def test_run_score_appends_to_changelog(tmp_path):
     # Summary should mention element subtotals
     summary = str(cl.cell(row=2, column=4).value or "")
     assert "ownership" in summary.lower()
+
+
+def test_run_score_writes_gap_analysis_sheet(tmp_path):
+    from openpyxl import load_workbook
+    root = _seed_entity(tmp_path)
+    run_score(root=root, entity_name="sample", requested_by="r@x")
+    wb = load_workbook(root / "entities" / "sample" / "BEE_Tracker.xlsx")
+    ga = wb["GapAnalysis"]
+    text = "|".join(str(v) for row in ga.iter_rows(values_only=True)
+                    for v in row if v is not None)
+    assert "Ranked Financial Actions" in text
+    assert "Non-Financial Opportunities" in text

@@ -15,12 +15,14 @@ from ..workbook.reader import (
 from ..workbook.writer import (
     write_calc_ownership, write_calc_mgmt_control, write_calc_skills_dev,
     write_calc_esd, write_calc_sed, write_calc_whatif, append_change_log,
+    write_gap_analysis,
 )
 from ..rendering.dashboard import DashboardContext, render_dashboard
 from ..scoring.registry import default_registry
 from ..scoring.level import total_score_to_level, level_after_priority_breaches
 from ..scoring.yes_initiative import calculate_yes_levels_up, apply_levels_up
 from ..gap_analysis.financial import enumerate_financial_actions
+from ..gap_analysis.non_financial import enumerate_non_financial_opportunities
 from ..gap_analysis.ranker import rank_top_n
 from ..whatif import apply_overrides
 
@@ -116,6 +118,13 @@ def run_score(*, root: Path, entity_name: str, requested_by: str,
         }
         for a in top5
     ]
+
+    # Full GapAnalysis sheet — Dashboard still gets just top-5 above
+    opportunities = enumerate_non_financial_opportunities(
+        inputs, scorecard, baseline_results,
+    )
+    all_ranked = rank_top_n(financial_actions, n=100)  # full list, not just top-5
+    write_gap_analysis(wb, ranked_actions=all_ranked, opportunities=opportunities)
 
     ctx = DashboardContext(
         entity_name=gs.entity_name,
