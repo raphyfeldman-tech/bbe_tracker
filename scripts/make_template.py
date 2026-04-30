@@ -9,7 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 
-from bee_tracker.workbook.schema import SHEETS, TAB_COLOURS
+from bee_tracker.workbook.schema import SHEETS, TAB_COLOURS, HIDDEN_SHEETS
 
 
 def _write_sheet(ws: Worksheet, tab_colour_key: str, headers: list[str]) -> None:
@@ -22,6 +22,8 @@ def _write_sheet(ws: Worksheet, tab_colour_key: str, headers: list[str]) -> None
                 start_color="E7E6E6", end_color="E7E6E6", fill_type="solid"
             )
         ws.freeze_panes = "A2"
+    if ws.title in HIDDEN_SHEETS:
+        ws.sheet_state = "hidden"
 
 
 def build_template(out: Path) -> None:

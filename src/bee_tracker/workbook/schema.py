@@ -107,6 +107,11 @@ SHEETS: list[tuple[str, str, list[str]]] = [
 
 EXPECTED_SHEET_NAMES: list[str] = [name for name, _, _ in SHEETS]
 
+# Sheets that should be hidden by default in the generated template.
+# Users can unhide them in Excel for debugging, but the daemon doesn't
+# rely on visibility.
+HIDDEN_SHEETS = {"RunQueue"}
+
 
 def headers_for(sheet_name: str) -> list[str]:
     """Return a copy of the header list for ``sheet_name``, or ``[]`` if unknown."""

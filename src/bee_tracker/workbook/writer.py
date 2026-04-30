@@ -82,3 +82,18 @@ def write_calc_whatif(wb: Workbook, scenario_results: list[ElementResult]) -> No
     ws.append(["element", "scenario_subtotal", "scenario_max_points", "sub_minimum_breach"])
     for r in scenario_results:
         ws.append([r.element, r.subtotal, r.max_points, r.sub_minimum_breach])
+
+
+def append_change_log(wb: Workbook, *, actor: str, scope: str, summary: str,
+                      timestamp_iso: str) -> None:
+    """Append a row to the ChangeLog sheet. Idempotent: ensures the header
+    row exists, then appends below it."""
+    ws = wb["ChangeLog"]
+    expected_headers = ["timestamp", "actor", "scope", "summary"]
+    current_headers = [c.value for c in ws[1]] if ws.max_row >= 1 else []
+    if current_headers != expected_headers:
+        # Sheet is empty or has wrong header — clear and re-seed
+        if ws.max_row > 0:
+            ws.delete_rows(1, ws.max_row)
+        ws.append(expected_headers)
+    ws.append([timestamp_iso, actor, scope, summary])

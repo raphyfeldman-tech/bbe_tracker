@@ -99,3 +99,15 @@ def test_fixture_matches_committed_template():
     """The fixture copy must be byte-identical to the committed template."""
     assert (Path("tests/fixtures/sample_workbook.xlsx").read_bytes()
             == Path("templates/workbook_template.xlsx").read_bytes())
+
+
+def test_runqueue_sheet_is_hidden():
+    wb = load_workbook(TEMPLATE)
+    assert wb["RunQueue"].sheet_state == "hidden", \
+        "RunQueue should be hidden by default"
+
+
+def test_other_sheets_remain_visible():
+    wb = load_workbook(TEMPLATE)
+    for sheet in ("Dashboard", "Ownership", "Settings"):
+        assert wb[sheet].sheet_state == "visible"

@@ -139,3 +139,18 @@ def test_run_score_skips_yes_when_not_participating(tmp_path):
 
     run_score(root=root, entity_name="sample", requested_by="tester@example")
     # No assertion on absence of YES text — just that it doesn't crash without YES data
+
+
+def test_run_score_appends_to_changelog(tmp_path):
+    from openpyxl import load_workbook
+    root = _seed_entity(tmp_path)
+    run_score(root=root, entity_name="sample", requested_by="raphy@example")
+    wb = load_workbook(root / "entities" / "sample" / "BEE_Tracker.xlsx")
+    cl = wb["ChangeLog"]
+    # Header at row 1, our run at row 2
+    assert [c.value for c in cl[1]] == ["timestamp", "actor", "scope", "summary"]
+    assert cl.cell(row=2, column=2).value == "raphy@example"
+    assert cl.cell(row=2, column=3).value == "score"
+    # Summary should mention element subtotals
+    summary = str(cl.cell(row=2, column=4).value or "")
+    assert "ownership" in summary.lower()

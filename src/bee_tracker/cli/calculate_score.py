@@ -14,7 +14,7 @@ from ..workbook.reader import (
 )
 from ..workbook.writer import (
     write_calc_ownership, write_calc_mgmt_control, write_calc_skills_dev,
-    write_calc_esd, write_calc_sed, write_calc_whatif,
+    write_calc_esd, write_calc_sed, write_calc_whatif, append_change_log,
 )
 from ..rendering.dashboard import DashboardContext, render_dashboard
 from ..scoring.registry import default_registry
@@ -132,6 +132,19 @@ def run_score(*, root: Path, entity_name: str, requested_by: str,
         yes_levels_up=yes_levels_up,
     )
     render_dashboard(wb, ctx)
+
+    # Build a short summary line and append to ChangeLog
+    subtotal_summary = ", ".join(
+        f"{r.element}={r.subtotal}" for r in baseline_results
+    )
+    scope = "score_with_whatif" if whatif else "score"
+    append_change_log(
+        wb,
+        actor=requested_by,
+        scope=scope,
+        summary=f"Total={total_score} BEE Level={bee_level} | {subtotal_summary}",
+        timestamp_iso=datetime.utcnow().isoformat(),
+    )
 
     backend.save(handle)
     log.info("Score run complete for entity=%s subtotals=%s", entity_name,
