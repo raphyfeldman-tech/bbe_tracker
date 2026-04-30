@@ -10,7 +10,7 @@ from ..workbook.reader import (
     read_ownership, read_employees, read_training,
     read_learnerships, read_bursaries, read_settings,
     read_suppliers, read_procurement, read_esd_contributions,
-    read_sed_contributions, read_whatif,
+    read_sed_contributions, read_whatif, read_yes_initiative,
 )
 from ..workbook.writer import (
     write_calc_ownership, write_calc_mgmt_control, write_calc_skills_dev,
@@ -19,6 +19,7 @@ from ..workbook.writer import (
 from ..rendering.dashboard import DashboardContext, render_dashboard
 from ..scoring.registry import default_registry
 from ..scoring.level import total_score_to_level, level_after_priority_breaches
+from ..scoring.yes_initiative import calculate_yes_levels_up, apply_levels_up
 from ..gap_analysis.financial import enumerate_financial_actions
 from ..gap_analysis.ranker import rank_top_n
 from ..whatif import apply_overrides
@@ -78,10 +79,29 @@ def run_score(*, root: Path, entity_name: str, requested_by: str,
         write_calc_whatif(wb, scenario_results)
 
     total_score = round(sum(r.subtotal for r in baseline_results), 4)
-    breach_count = sum(1 for r in baseline_results if r.sub_minimum_breach)
-    bee_level = level_after_priority_breaches(
+    # Restrict priority breaches to the canonical 3 priority elements
+    PRIORITY_ELEMENT_NAMES = {"ownership", "skills_development", "enterprise_supplier_dev"}
+    breach_count = sum(
+        1 for r in baseline_results
+        if r.sub_minimum_breach and r.element in PRIORITY_ELEMENT_NAMES
+    )
+    base_level = level_after_priority_breaches(
         total_score, breach_count=breach_count, scorecard=scorecard,
     )
+
+    # Apply Y.E.S. tier bump if the entity participates
+    yes_levels_up = 0
+    if gs.yes_participating:
+        yes_df = read_yes_initiative(wb)
+        headcount = (
+            len(inputs["employees"]) if "employees" in inputs and not inputs["employees"].empty
+            else 0
+        )
+        yes_levels_up = calculate_yes_levels_up(
+            yes_initiative=yes_df, headcount=headcount, scorecard=scorecard,
+        )
+
+    bee_level = apply_levels_up(base_level, yes_levels_up)
 
     # Top gaps
     financial_actions = enumerate_financial_actions(inputs, scorecard, baseline_results)
@@ -109,6 +129,7 @@ def run_score(*, root: Path, entity_name: str, requested_by: str,
         bee_level=bee_level,
         scenario_element_results=scenario_results,
         top_gaps=top_gaps,
+        yes_levels_up=yes_levels_up,
     )
     render_dashboard(wb, ctx)
 

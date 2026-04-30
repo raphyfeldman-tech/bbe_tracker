@@ -16,6 +16,7 @@ class DashboardContext:
     bee_level: int | str = "non_compliant"
     scenario_element_results: list[ElementResult] | None = None
     top_gaps: list[dict] | None = None
+    yes_levels_up: int = 0
 
 
 def _clear(wb: Workbook, sheet: str) -> None:
@@ -42,7 +43,10 @@ def render_dashboard(wb: Workbook, ctx: DashboardContext) -> None:
     ws.append([])
 
     # BEE level tile
-    ws.append(["BEE Level:", str(ctx.bee_level)])
+    if ctx.yes_levels_up > 0:
+        ws.append(["BEE Level:", str(ctx.bee_level), f"(Y.E.S. +{ctx.yes_levels_up} levels)"])
+    else:
+        ws.append(["BEE Level:", str(ctx.bee_level)])
     ws.append([])
 
     # Priority-element status strip
