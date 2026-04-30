@@ -18,7 +18,7 @@ from ..workbook.writer import (
 )
 from ..rendering.dashboard import DashboardContext, render_dashboard
 from ..scoring.registry import default_registry
-from ..scoring.level import total_score_to_level
+from ..scoring.level import total_score_to_level, level_after_priority_breaches
 from ..gap_analysis.financial import enumerate_financial_actions
 from ..gap_analysis.ranker import rank_top_n
 from ..whatif import apply_overrides
@@ -78,7 +78,10 @@ def run_score(*, root: Path, entity_name: str, requested_by: str,
         write_calc_whatif(wb, scenario_results)
 
     total_score = round(sum(r.subtotal for r in baseline_results), 4)
-    bee_level = total_score_to_level(total_score, scorecard)
+    breach_count = sum(1 for r in baseline_results if r.sub_minimum_breach)
+    bee_level = level_after_priority_breaches(
+        total_score, breach_count=breach_count, scorecard=scorecard,
+    )
 
     # Top gaps
     financial_actions = enumerate_financial_actions(inputs, scorecard, baseline_results)

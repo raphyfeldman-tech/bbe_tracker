@@ -20,3 +20,23 @@ def total_score_to_level(score: float, scorecard: Scorecard) -> int | str:
         if score >= threshold:
             return lvl
     return "non_compliant"
+
+
+def level_after_priority_breaches(
+    score: float, *, breach_count: int, scorecard: Scorecard,
+) -> int | str:
+    """Apply ICT Sector Code §5.3 priority-element discounting.
+
+    Each priority-element sub-minimum breach drops the BEE level by one
+    (higher number is worse). If discounting would push past Level 8, the
+    result is 'non_compliant'. A score that's already non_compliant is
+    returned unchanged — breaches don't double-penalize.
+    """
+    base = total_score_to_level(score, scorecard)
+    if base == "non_compliant" or breach_count <= 0:
+        return base
+    # base is an int 1..8
+    new = int(base) + int(breach_count)
+    if new > 8:
+        return "non_compliant"
+    return new
