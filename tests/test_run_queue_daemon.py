@@ -64,3 +64,36 @@ def test_daemon_marks_failed_on_bad_scope(tmp_path):
     ws = wb["RunQueue"]
     assert ws.cell(row=2, column=5).value == "failed"
     assert "unknown_scope" in str(ws.cell(row=2, column=8).value)
+
+
+def test_process_one_entity_accepts_explicit_backend(tmp_path):
+    from openpyxl import load_workbook
+    import shutil
+    from bee_tracker.cli.run_queue_daemon import process_one_entity
+    from bee_tracker.workbook.backends import LocalFolderBackend
+
+    root = tmp_path / "bee_tracker"
+    entity = root / "entities" / "sample"
+    entity.mkdir(parents=True)
+    shutil.copy(FIXTURE, entity / "BEE_Tracker.xlsx")
+    shutil.copy(GROUP_SETTINGS, entity / "group_settings.yaml")
+    shutil.copy(SCORECARD, root / "ict_scorecard.yaml")
+
+    wb = load_workbook(entity / "BEE_Tracker.xlsx")
+    wb["Ownership"].append([
+        "Shareholder A", 30.0, 30.0, 15.0, 15.0, 5.0, 25.0, 2.0,
+        "2025-10-01", "EV-0001"
+    ])
+    wb["RunQueue"].append([
+        "r-explicit-backend", "2026-04-29T10:00:00", "u@x", "score",
+        "queued", None, None, None, None,
+    ])
+    wb.save(entity / "BEE_Tracker.xlsx")
+
+    backend = LocalFolderBackend(root)
+    processed = process_one_entity(
+        root=root, entity_name="sample", backend=backend,
+    )
+    assert processed == 1
+    wb = load_workbook(entity / "BEE_Tracker.xlsx")
+    assert wb["RunQueue"].cell(row=2, column=5).value == "completed"
