@@ -78,22 +78,26 @@ bee-validate-data --root /tmp/bee --entity sample --report /tmp/bee/validation.h
 pytest -v
 ```
 
-(144 tests at the end of Plan 2.)
+(158 tests after the Criticals-fix sprint.)
 
 ## Scope (Plan 1 + Plan 2)
 
 What's done:
 - All 5 element scorers (Ownership, Management Control, Skills Development, ESD/PP, SED) with hand-calculated test fixtures
-- Y.E.S. tier level-up logic (3 tiers)
+- Y.E.S. tier level-up logic (3 tiers), wired into the score pipeline (Y.E.S. annotation on Dashboard when applied)
 - Total score → BEE Level (1–8 / non-compliant) lookup
+- BEE Level with priority-element breach discount + Y.E.S. tier bump applied end-to-end
 - WhatIf scenario path (`--whatif` flag) with Dashboard scenario column
-- GapAnalysis: cost-of-point ranker for financial levers (procurement / skills / ESD / SED) + non-financial opportunities (headcount / ownership)
+- GapAnalysis sheet populated with ranked financial actions (procurement / skills / ESD / SED) + non-financial opportunities (headcount / ownership)
 - Dashboard with BEE Level tile + top-5 gaps + element breakdown
+- ChangeLog appended on every recalc
+- RunQueue hidden by default in the template
 - Validation: structural, evidence-id, cert expiry, demographics, NPAT/payroll, ESD/SED thresholds, Y.E.S. age range, HTML report
 - Multi-entity daemon (no `--entity` arg → process all under `entities/`)
 - GraphBackend wired into `bee-calculate-score --backend graph` (with `from_env(locator_yaml)`)
+- Daemon (`bee-run-queue-daemon`) supports `--backend graph` end-to-end
 - Office Script Run Assessment button + RunQueue round-trip
-- 144 tests, all green
+- 158 tests, all green
 
 Deferred to Plan 3:
 - PDF reports with per-entity branding
@@ -108,6 +112,6 @@ Deferred to Plan 3:
 - 429/503 retry on Graph calls
 - Pagination on `list_folders`
 - Byte-determinism flake investigation (template generator)
-- GraphBackend wiring for `bee-validate-data` and `bee-run-queue-daemon` (currently `bee-calculate-score` only)
+- GraphBackend wiring for `bee-validate-data` (validate-data still uses raw `load_workbook`)
 - WhatIf sheet header row (`["key", "value"]`) auto-created by template generator
 - Generic `write_calc_element(wb, sheet, result)` writer to deduplicate the 5 per-element writers

@@ -57,12 +57,22 @@ src/bee_tracker/
   a copy of the scoring inputs before the scorer runs.
 - **`total_score_to_level(score, scorecard)`** — looks up BEE Level
   (1–8 / non-compliant) from the scorecard's level table.
+- **`level_after_priority_breaches(score, breach_count, scorecard)`** —
+  applies the §5.3 sub-minimum discount to the BEE level (one level per
+  priority-element breach).
+- **`apply_levels_up(level, levels_up)`** — adds Y.E.S. tier bumps after
+  the breach discount.
+- **`append_change_log(wb, ...)`** — writes a record to the ChangeLog
+  sheet (timestamp, actor, scope, summary).
+- **`write_gap_analysis(wb, ranked_actions, opportunities)`** — writes
+  the GapAnalysis sheet (Section A ranked financial actions, Section B
+  non-financial opportunities).
 - **`RunQueue` functions** — `read_queued`, `mark_running`, `mark_completed`,
   `mark_failed`. Row identity is `request_id`.
 
 ## Testing
 
-- `pytest` runs the suite (144 tests at end of Plan 2).
+- `pytest` runs the suite (158 tests after Criticals-fix sprint).
 - Graph client is tested with `responses` — no real network.
 - Backend abstraction means end-to-end tests run against a temp folder;
   GraphBackend gets exercised by targeted unit tests only. Plan 3 will
@@ -120,7 +130,7 @@ removed and `datetime.utcnow()` (deprecated in 3.12) can be replaced with
 - 30-day payment bonus indicator in `esd_pp.py`
 - 429 / 503 retry-with-backoff in `graph/client.py`
 - Pagination via `@odata.nextLink` on `GraphClient.list_folders`
-- GraphBackend wiring for `bee-validate-data` and `bee-run-queue-daemon`
+- GraphBackend wiring for `bee-validate-data`
 - WhatIf sheet's header row auto-created by `make_template.py`
 - Byte-determinism flake on `test_template_is_byte_deterministic` —
   openpyxl resets `wb.properties.modified` at save time despite Plan 1's
@@ -165,3 +175,21 @@ entities but doesn't yet model every edge case in the ICT Sector Code.
 - **SED:** 1 indicator. No 5-year average NPAT denominator override.
 - **Y.E.S.:** 3-tier ladder. Doesn't model the "must maintain prior-year
   contributor status" qualifier.
+
+## Criticals fix sprint (post-Plan-2 review)
+
+After Plan 2 closed, an independent code review caught 5 Critical gaps
+between the README and the runtime — features the documentation said
+were done but that the integrated CLI never invoked. All 5 plus one
+"Important" item are now fixed:
+
+| ID | Fix |
+|---|---|
+| C1 | Y.E.S. tier level-up wired into `cli/calculate_score.run_score`; Dashboard shows `(Y.E.S. +N levels)` |
+| C2 | Priority-element sub-minimum breach discounts the BEE level by 1 per breach (`level_after_priority_breaches`) |
+| C3 | `bee-run-queue-daemon` now routes all workbook I/O through `WorkbookBackend` (`--backend graph` works end-to-end) |
+| C4 | `GapAnalysis` sheet populated with ranked financial actions + non-financial opportunities |
+| C5 | `ChangeLog` sheet appended on every recalc |
+| I1 | `RunQueue` sheet hidden by default in the template generator |
+
+Test count grew from 144 to 158.
