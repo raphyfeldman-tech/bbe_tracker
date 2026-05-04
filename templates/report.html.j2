@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>B-BBEE Scorecard — {{ entity_name }}</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    body {
+      font-family: -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
+      color: {{ colours.body_text }};
+      font-size: 11pt;
+      line-height: 1.4;
+      margin: 0;
+    }
+    header { display: flex; align-items: center; gap: 1em; border-bottom: 3px solid {{ colours.primary }}; padding-bottom: 0.6em; margin-bottom: 1em; }
+    header img { max-height: 56px; }
+    header h1 { color: {{ colours.primary }}; margin: 0; font-size: 18pt; }
+    h2 { color: {{ colours.primary }}; font-size: 13pt; border-bottom: 1px solid {{ colours.muted }}; padding-bottom: 0.2em; margin-top: 1.2em; }
+    .meta { color: {{ colours.muted }}; font-size: 10pt; margin-bottom: 0.5em; }
+    .level-tile { background: {{ colours.primary }}; color: white; padding: 0.6em 1em; border-radius: 4px; display: inline-block; font-size: 14pt; font-weight: bold; margin-right: 0.6em; }
+    .total-tile { background: {{ colours.secondary }}; color: white; padding: 0.6em 1em; border-radius: 4px; display: inline-block; font-size: 12pt; }
+    .yes-annotation { color: {{ colours.accent }}; font-weight: bold; margin-left: 0.6em; }
+    table { border-collapse: collapse; width: 100%; margin-top: 0.6em; font-size: 10pt; }
+    th, td { border: 1px solid {{ colours.muted }}; padding: 0.4em 0.6em; text-align: left; vertical-align: top; }
+    th { background: #F3F4F6; }
+    tr.breach td { background: #FFF3F0; }
+    tr.breach td:first-child::before { content: "⚠ "; color: #C00000; }
+    .footer { color: {{ colours.muted }}; font-size: 9pt; margin-top: 2em; border-top: 1px solid {{ colours.muted }}; padding-top: 0.5em; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="{{ logo_uri }}" alt="{{ entity_name }}">
+    <div>
+      <h1>B-BBEE Scorecard</h1>
+      <div class="meta">{{ entity_name }} · {{ measurement_period }}</div>
+    </div>
+  </header>
+
+  <h2>Summary</h2>
+  <div>
+    <span class="level-tile">Level {{ bee_level }}</span>
+    <span class="total-tile">{{ total_score }} / {{ max_score }} pts</span>
+    {% if yes_levels_up and yes_levels_up > 0 %}
+      <span class="yes-annotation">Y.E.S. +{{ yes_levels_up }} levels</span>
+    {% endif %}
+  </div>
+
+  <h2>Element Breakdown</h2>
+  <table>
+    <thead><tr><th>Element</th><th>Subtotal</th><th>Max</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for e in elements %}
+      <tr class="{% if e.sub_minimum_breach %}breach{% endif %}">
+        <td>{{ e.name }}</td>
+        <td>{{ e.subtotal }}</td>
+        <td>{{ e.max_points }}</td>
+        <td>{% if e.sub_minimum_breach %}BREACH (sub-minimum){% else %}OK{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if top_gaps %}
+  <h2>Top Gaps to Next Level</h2>
+  <table>
+    <thead><tr><th>Action</th><th>R Required</th><th>Points</th><th>R / Point</th></tr></thead>
+    <tbody>
+      {% for g in top_gaps %}
+      <tr>
+        <td>{{ g.description }}</td>
+        <td>R {{ '{:,}'.format(g.rand_required|int) }}</td>
+        <td>{{ g.points_gained }}</td>
+        <td>R {{ '{:,}'.format(g.rand_per_point|int) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <div class="footer">
+    Generated {{ generated_at }} by BEE Tracker · For management use only.
+    Not a SANAS verification certificate.
+  </div>
+</body>
+</html>
