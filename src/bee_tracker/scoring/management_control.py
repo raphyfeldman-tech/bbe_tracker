@@ -38,6 +38,13 @@ _INDICATOR_PREDICATES = {
 }
 
 
+_BLACK_FEMALE_INDICATORS = {
+    "black_female_senior_mgmt": "Senior Mgmt",
+    "black_female_middle_mgmt": "Middle Mgmt",
+    "black_female_junior_mgmt": "Junior Mgmt",
+}
+
+
 def _black_share_pct(employees: pd.DataFrame, predicate) -> float:
     """FTE-weighted percentage of black employees among those matching the predicate."""
     if employees.empty:
@@ -53,15 +60,39 @@ def _black_share_pct(employees: pd.DataFrame, predicate) -> float:
     return float(black_fte / total_fte * 100.0)
 
 
+def _black_female_share_pct(employees: pd.DataFrame, level: str) -> float:
+    """Black-female FTE share at a given occupational level."""
+    if employees.empty:
+        return 0.0
+    if "gender" not in employees.columns:
+        return 0.0
+    at_level = employees[employees["occupational_level"] == level]
+    if at_level.empty:
+        return 0.0
+    total_fte = at_level["fte_months_in_period"].fillna(0).sum()
+    if total_fte == 0:
+        return 0.0
+    bf = at_level[
+        at_level["is_black"].fillna(False)
+        & (at_level["gender"].fillna("") == "Female")
+    ]
+    bf_fte = bf["fte_months_in_period"].fillna(0).sum()
+    return float(bf_fte / total_fte * 100.0)
+
+
 def score_management_control(employees: pd.DataFrame, scorecard: Scorecard) -> ElementResult:
     cfg = scorecard.elements["management_control"]
     indicator_points: dict[str, float] = {}
     for indicator, target in cfg.indicators.items():
-        predicate = _INDICATOR_PREDICATES.get(indicator)
-        if predicate is None:
-            indicator_points[indicator] = 0.0
-            continue
-        actual_pct = _black_share_pct(employees, predicate)
+        if indicator in _BLACK_FEMALE_INDICATORS:
+            level = _BLACK_FEMALE_INDICATORS[indicator]
+            actual_pct = _black_female_share_pct(employees, level)
+        else:
+            predicate = _INDICATOR_PREDICATES.get(indicator)
+            if predicate is None:
+                indicator_points[indicator] = 0.0
+                continue
+            actual_pct = _black_share_pct(employees, predicate)
         ratio = 0.0 if target.target_pct == 0 else actual_pct / target.target_pct
         ratio = min(ratio, 1.0)
         indicator_points[indicator] = round(ratio * target.weighting, 4)

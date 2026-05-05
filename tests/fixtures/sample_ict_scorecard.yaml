@@ -37,7 +37,7 @@ elements:
         target_pct: 3
         weighting: 3
   management_control:
-    total_points: 19
+    total_points: 24       # was 19; +5 for the three black-female indicators
     priority: false
     sub_minimum_pct: null
     indicators:
@@ -56,6 +56,15 @@ elements:
       black_junior_mgmt:
         target_pct: 88
         weighting: 4
+      black_female_senior_mgmt:
+        target_pct: 30
+        weighting: 2
+      black_female_middle_mgmt:
+        target_pct: 40
+        weighting: 2
+      black_female_junior_mgmt:
+        target_pct: 50
+        weighting: 1
   skills_development:
     total_points: 15
     priority: true
