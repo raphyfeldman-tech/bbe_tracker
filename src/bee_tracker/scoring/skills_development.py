@@ -5,6 +5,7 @@ from .base import ElementResult, ElementScorer
 
 
 _BLACK_RACES = {"Black African", "Coloured", "Indian"}
+_QUALIFYING_CATEGORIES = {"B", "C", "D", "E", "F", "G"}
 
 
 def _is_black_race(value) -> bool:
@@ -25,13 +26,17 @@ def score_skills_development(
     npat = settings.get("npat_current") or 0
     headcount = len(employees) if not employees.empty else 0
 
-    # training_spend_pct
+    # Indicator: training_spend_pct (Categories B-G only)
     training_spend = 0.0
     if not training.empty and not employees.empty and "employee_id" in employees.columns:
         emp_lookup = employees.set_index("employee_id")["is_black"].to_dict()
         for _, row in training.iterrows():
-            if emp_lookup.get(row.get("employee_id"), False):
-                training_spend += float(row.get("training_spend") or 0)
+            if not emp_lookup.get(row.get("employee_id"), False):
+                continue
+            category = str(row.get("training_category", "")).strip().upper()
+            if category not in _QUALIFYING_CATEGORIES:
+                continue
+            training_spend += float(row.get("training_spend") or 0)
     training_pct = (training_spend / leviable_payroll * 100.0) if leviable_payroll else 0.0
 
     # learnership_participation_pct

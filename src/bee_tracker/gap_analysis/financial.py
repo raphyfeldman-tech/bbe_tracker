@@ -115,9 +115,10 @@ def _skills_action(
     target_eid = black_emps.iloc[0]["employee_id"]
     new_training = (training.copy() if training is not None and not training.empty
                     else pd.DataFrame(columns=["employee_id", "training_spend",
+                                               "training_category",
                                                "salary_cost_during_training"]))
     new_row = {"employee_id": target_eid, "training_spend": _SKILLS_INCREMENT,
-               "salary_cost_during_training": 0}
+               "training_category": "B", "salary_cost_during_training": 0}
     new_training = pd.concat([new_training, pd.DataFrame([new_row])], ignore_index=True)
 
     scenario_inputs = {**inputs, "training": new_training}
