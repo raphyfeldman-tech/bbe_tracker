@@ -10,10 +10,15 @@ def _clear_sheet(wb: Workbook, sheet: str) -> None:
         ws.delete_rows(1, ws.max_row)
 
 
-def write_calc_ownership(wb: Workbook, result: ElementResult) -> None:
-    """Overwrite Calc_Ownership with the given result. Does not touch any other sheet."""
-    _clear_sheet(wb, "Calc_Ownership")
-    ws = wb["Calc_Ownership"]
+def write_calc_element(wb: Workbook, sheet_name: str, result: ElementResult) -> None:
+    """Generic Calc_<Element> writer.
+
+    Use directly with the canonical sheet name, e.g.
+        write_calc_element(wb, "Calc_Ownership", result)
+    Or via the per-element shims (write_calc_ownership, etc.) for readability.
+    """
+    _clear_sheet(wb, sheet_name)
+    ws = wb[sheet_name]
     ws.append(["indicator", "points_earned", "max_points_check"])
     for indicator, points in result.indicator_points.items():
         ws.append([indicator, points, None])
@@ -21,58 +26,31 @@ def write_calc_ownership(wb: Workbook, result: ElementResult) -> None:
     ws.append(["SUBTOTAL", result.subtotal, None])
     ws.append(["MAX_POINTS", result.max_points, None])
     ws.append(["SUB_MINIMUM_BREACH", result.sub_minimum_breach, None])
+
+
+def write_calc_ownership(wb: Workbook, result: ElementResult) -> None:
+    """Overwrite Calc_Ownership with the given result. Does not touch any other sheet."""
+    write_calc_element(wb, "Calc_Ownership", result)
 
 
 def write_calc_mgmt_control(wb: Workbook, result: ElementResult) -> None:
     """Overwrite Calc_MgmtControl with the given result."""
-    _clear_sheet(wb, "Calc_MgmtControl")
-    ws = wb["Calc_MgmtControl"]
-    ws.append(["indicator", "points_earned", "max_points_check"])
-    for indicator, points in result.indicator_points.items():
-        ws.append([indicator, points, None])
-    ws.append([])
-    ws.append(["SUBTOTAL", result.subtotal, None])
-    ws.append(["MAX_POINTS", result.max_points, None])
-    ws.append(["SUB_MINIMUM_BREACH", result.sub_minimum_breach, None])
+    write_calc_element(wb, "Calc_MgmtControl", result)
 
 
 def write_calc_skills_dev(wb: Workbook, result: ElementResult) -> None:
     """Overwrite Calc_SkillsDev with the given result."""
-    _clear_sheet(wb, "Calc_SkillsDev")
-    ws = wb["Calc_SkillsDev"]
-    ws.append(["indicator", "points_earned", "max_points_check"])
-    for indicator, points in result.indicator_points.items():
-        ws.append([indicator, points, None])
-    ws.append([])
-    ws.append(["SUBTOTAL", result.subtotal, None])
-    ws.append(["MAX_POINTS", result.max_points, None])
-    ws.append(["SUB_MINIMUM_BREACH", result.sub_minimum_breach, None])
+    write_calc_element(wb, "Calc_SkillsDev", result)
 
 
 def write_calc_esd(wb: Workbook, result: ElementResult) -> None:
     """Overwrite Calc_ESD with the given result."""
-    _clear_sheet(wb, "Calc_ESD")
-    ws = wb["Calc_ESD"]
-    ws.append(["indicator", "points_earned", "max_points_check"])
-    for indicator, points in result.indicator_points.items():
-        ws.append([indicator, points, None])
-    ws.append([])
-    ws.append(["SUBTOTAL", result.subtotal, None])
-    ws.append(["MAX_POINTS", result.max_points, None])
-    ws.append(["SUB_MINIMUM_BREACH", result.sub_minimum_breach, None])
+    write_calc_element(wb, "Calc_ESD", result)
 
 
 def write_calc_sed(wb: Workbook, result: ElementResult) -> None:
     """Overwrite Calc_SED with the given result."""
-    _clear_sheet(wb, "Calc_SED")
-    ws = wb["Calc_SED"]
-    ws.append(["indicator", "points_earned", "max_points_check"])
-    for indicator, points in result.indicator_points.items():
-        ws.append([indicator, points, None])
-    ws.append([])
-    ws.append(["SUBTOTAL", result.subtotal, None])
-    ws.append(["MAX_POINTS", result.max_points, None])
-    ws.append(["SUB_MINIMUM_BREACH", result.sub_minimum_breach, None])
+    write_calc_element(wb, "Calc_SED", result)
 
 
 def write_calc_whatif(wb: Workbook, scenario_results: list[ElementResult]) -> None:
