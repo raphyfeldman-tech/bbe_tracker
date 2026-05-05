@@ -18,7 +18,7 @@ TAB_COLOURS = {
 SHEETS: list[tuple[str, str, list[str]]] = [
     ("Dashboard", "green", []),
     ("GapAnalysis", "green", []),
-    ("WhatIf", "blue", []),
+    ("WhatIf", "blue", ["key", "value"]),
     ("Ownership", "blue", [
         "shareholder_name",
         "black_voting_rights_pct",

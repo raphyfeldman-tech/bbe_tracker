@@ -111,3 +111,9 @@ def test_other_sheets_remain_visible():
     wb = load_workbook(TEMPLATE)
     for sheet in ("Dashboard", "Ownership", "Settings"):
         assert wb[sheet].sheet_state == "visible"
+
+
+def test_whatif_sheet_has_headers():
+    wb = load_workbook(TEMPLATE)
+    headers = [c.value for c in wb["WhatIf"][1]]
+    assert headers == ["key", "value"]
