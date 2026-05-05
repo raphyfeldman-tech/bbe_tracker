@@ -52,6 +52,7 @@ CASE_FULL = {
         "black_female_senior_mgmt": 0.0,
         "black_female_middle_mgmt": 0.0,
         "black_female_junior_mgmt": 0.0,
+        "black_disabled": 0.0,
     },
     "expected_subtotal": 19.0,
     "sub_minimum_breach": False,
@@ -77,6 +78,7 @@ CASE_ZERO = {
         "black_female_senior_mgmt": 0.0,
         "black_female_middle_mgmt": 0.0,
         "black_female_junior_mgmt": 0.0,
+        "black_disabled": 0.0,
     },
     "expected_subtotal": 0.0,
     "sub_minimum_breach": False,
@@ -100,6 +102,7 @@ CASE_FTE_WEIGHTED = {
         "black_female_senior_mgmt": 0.0,
         "black_female_middle_mgmt": 0.0,
         "black_female_junior_mgmt": 0.0,
+        "black_disabled": 0.0,
     },
     "expected_subtotal": round((6.0 / 18.0) / 0.60 * 4, 4),
     "sub_minimum_breach": False,
@@ -130,10 +133,39 @@ CASE_BLACK_FEMALE = {
         "black_female_senior_mgmt": 2.0,
         "black_female_middle_mgmt": 0.0,
         "black_female_junior_mgmt": 0.0,
+        "black_disabled": 0.0,
     },
     "expected_subtotal": 6.0,
     "sub_minimum_breach": False,
 }
 
 
-ALL_CASES = [CASE_FULL, CASE_ZERO, CASE_FTE_WEIGHTED, CASE_BLACK_FEMALE]
+# CASE_BLACK_DISABLED: 100 black-male junior managers, first 3 are disabled.
+# Junior pool = 100 × 12 = 1200 fte-mo. All 100% black → cap 4 pts.
+# Black-disabled share = 3/100 = 3% > target 2% → cap → 2 pts.
+# Total: 4 + 2 = 6
+CASE_BLACK_DISABLED = {
+    "name": "black_disabled",
+    "employees": pd.DataFrame([
+        {"is_black": True, "gender": "Male", "occupational_level": "Junior Mgmt",
+         "disability": (i < 3),
+         "is_executive_director": False, "fte_months_in_period": 12}
+        for i in range(100)
+    ]),
+    "expected_points": {
+        "black_board_voting": 0.0,
+        "black_executive_directors": 0.0,
+        "black_senior_mgmt": 0.0,
+        "black_middle_mgmt": 0.0,
+        "black_junior_mgmt": 4.0,
+        "black_female_senior_mgmt": 0.0,
+        "black_female_middle_mgmt": 0.0,
+        "black_female_junior_mgmt": 0.0,
+        "black_disabled": 2.0,
+    },
+    "expected_subtotal": 6.0,
+    "sub_minimum_breach": False,
+}
+
+
+ALL_CASES = [CASE_FULL, CASE_ZERO, CASE_FTE_WEIGHTED, CASE_BLACK_FEMALE, CASE_BLACK_DISABLED]

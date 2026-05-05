@@ -60,6 +60,21 @@ def _black_share_pct(employees: pd.DataFrame, predicate) -> float:
     return float(black_fte / total_fte * 100.0)
 
 
+def _black_disabled_share_pct(employees: pd.DataFrame) -> float:
+    """Black-disabled FTE share of total headcount."""
+    if employees.empty:
+        return 0.0
+    total_fte = employees["fte_months_in_period"].fillna(0).sum()
+    if total_fte == 0:
+        return 0.0
+    disability_col = employees.get(
+        "disability", pd.Series(False, index=employees.index),
+    ).fillna(False)
+    bd = employees[employees["is_black"].fillna(False) & disability_col]
+    bd_fte = bd["fte_months_in_period"].fillna(0).sum()
+    return float(bd_fte / total_fte * 100.0)
+
+
 def _black_female_share_pct(employees: pd.DataFrame, level: str) -> float:
     """Black-female FTE share at a given occupational level."""
     if employees.empty:
@@ -84,7 +99,9 @@ def score_management_control(employees: pd.DataFrame, scorecard: Scorecard) -> E
     cfg = scorecard.elements["management_control"]
     indicator_points: dict[str, float] = {}
     for indicator, target in cfg.indicators.items():
-        if indicator in _BLACK_FEMALE_INDICATORS:
+        if indicator == "black_disabled":
+            actual_pct = _black_disabled_share_pct(employees)
+        elif indicator in _BLACK_FEMALE_INDICATORS:
             level = _BLACK_FEMALE_INDICATORS[indicator]
             actual_pct = _black_female_share_pct(employees, level)
         else:
