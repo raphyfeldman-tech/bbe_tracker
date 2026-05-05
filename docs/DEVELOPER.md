@@ -4,10 +4,14 @@
 
 ```
 src/bee_tracker/
+├── reporting/                # NEW: PDF report generation
+│   ├── branding.py           # per-entity branding loader (logo + colours.yaml)
+│   └── pdf.py                # WeasyPrint renderer + ReportContext dataclass
 ├── cli/                # Console-script entry points
 │   ├── calculate_score.py
 │   ├── validate_data.py
-│   └── run_queue_daemon.py
+│   ├── run_queue_daemon.py
+│   └── generate_report.py    # NEW: bee-generate-report entry point
 ├── config.py           # YAML loaders + frozen dataclasses
 ├── errors.py           # Exception hierarchy
 ├── gap_analysis/       # Gap analysis + ranker
@@ -40,6 +44,9 @@ src/bee_tracker/
     ├── reader.py       # Sheet → DataFrame readers
     ├── schema.py       # SHEETS table (relocated from scripts/)
     └── writer.py       # DataFrame/result → sheet writers
+
+templates/
+└── report.html.j2            # NEW: PDF report Jinja template
 ```
 
 ## Key abstractions
@@ -69,14 +76,38 @@ src/bee_tracker/
   non-financial opportunities).
 - **`RunQueue` functions** — `read_queued`, `mark_running`, `mark_completed`,
   `mark_failed`. Row identity is `request_id`.
+- **`Branding`** dataclass + **`load_branding(folder)`** — reads logo +
+  colours from a per-entity branding folder.
+- **`ReportContext`** + **`render_pdf(...)`** — renders the Jinja template
+  through WeasyPrint to a PDF.
 
 ## Testing
 
-- `pytest` runs the suite (158 tests after Criticals-fix sprint).
+- `pytest` runs the suite (169 passed + 2 skipped — PDF-render tests
+  skip when WeasyPrint can't import).
 - Graph client is tested with `responses` — no real network.
 - Backend abstraction means end-to-end tests run against a temp folder;
   GraphBackend gets exercised by targeted unit tests only. Plan 3 will
   add a manual smoke test against a real SharePoint tenant.
+
+## Local-dev caveats
+
+### WeasyPrint requires system libraries
+
+PDF rendering uses WeasyPrint, which depends on Cairo, Pango, and GDK-Pixbuf
+system libraries. Without them, `from weasyprint import HTML` fails at import
+time. The two PDF-render tests (`tests/test_reporting_pdf.py` and the CLI
+test in `tests/test_cli_generate_report.py`) use `pytest.importorskip` so
+they skip cleanly on machines without the libs.
+
+To enable PDF rendering:
+
+- macOS: `brew install cairo pango gdk-pixbuf libffi` then `pip install -e ".[pdf]"`
+- Ubuntu: `apt install libpango-1.0-0 libcairo2 libgdk-pixbuf2.0-0` then `pip install -e ".[pdf]"`
+
+The renderer module itself imports cleanly without WeasyPrint — the import
+is deferred until `render_pdf()` is called — so all non-PDF tests run
+green regardless.
 
 ## Regenerating the workbook template
 
@@ -119,7 +150,6 @@ removed and `datetime.utcnow()` (deprecated in 3.12) can be replaced with
 
 ## Deferred tech debt (carry to Plan 3)
 
-- PDF report generator + per-entity branding (`generate_report.py`)
 - Email alerts (`send_alerts.py`) — priority breach / cert expiry / level drop
 - Evidence-pack export script (`export_evidence_pack.py`)
 - Service-install scripts for the daemon (Windows Service or systemd unit)

@@ -22,6 +22,12 @@ pip install -e ".[dev]"
 
 Requires Python 3.9+.
 
+For PDF report generation, install the optional `pdf` extra:
+    pip install -e ".[dev,pdf]"
+This adds WeasyPrint, which requires Cairo and Pango system libraries:
+    macOS:  brew install cairo pango gdk-pixbuf libffi
+    Ubuntu: apt install libpango-1.0-0 libcairo2 libgdk-pixbuf2.0-0
+
 ## Seed a local entity
 
 ```bash
@@ -70,6 +76,9 @@ bee-run-queue-daemon --root /tmp/bee --interval 60
 
 # Validation report
 bee-validate-data --root /tmp/bee --entity sample --report /tmp/bee/validation.html
+
+# PDF report (requires the entity's branding/ folder + the [pdf] extra installed)
+bee-generate-report --root /tmp/bee --entity sample --output /tmp/bee/report.pdf
 ```
 
 ## Test
@@ -78,7 +87,7 @@ bee-validate-data --root /tmp/bee --entity sample --report /tmp/bee/validation.h
 pytest -v
 ```
 
-(158 tests after the Criticals-fix sprint.)
+(169 passed + 2 skipped — the 2 skips are PDF-render tests that skip when WeasyPrint can't import.)
 
 ## Scope (Plan 1 + Plan 2)
 
@@ -97,10 +106,10 @@ What's done:
 - GraphBackend wired into `bee-calculate-score --backend graph` (with `from_env(locator_yaml)`)
 - Daemon (`bee-run-queue-daemon`) supports `--backend graph` end-to-end
 - Office Script Run Assessment button + RunQueue round-trip
-- 158 tests, all green
+- PDF reports with per-entity branding (`bee-generate-report`) — install `pip install -e ".[pdf]"` for WeasyPrint
+- 169 passed + 2 skipped tests
 
 Deferred to Plan 3:
-- PDF reports with per-entity branding
 - Email alerts (priority breach / cert expiry / level drop)
 - Evidence-pack export (`export_evidence_pack.py`)
 - Service-install scripts for the daemon (Windows Service / systemd)
