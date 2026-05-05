@@ -124,3 +124,33 @@ CASE_CATEGORY_A_EXCLUDED = {
 
 
 ALL_CASES = [CASE_FULL, CASE_BREACH, CASE_NO_PAYROLL, CASE_CATEGORY_A_EXCLUDED]
+
+
+# CASE_SALARY_CAP:
+# Training: R200k direct + R100k salary-during-training (50% of direct, ABOVE 15% cap)
+# Recognised salary cost = min(R100k, 15% × R200k = R30k) = R30k
+# Total recognised = R200k + R30k = R230k
+# R230k / R10m = 2.3% → ratio = 2.3/6 = 0.3833 → points = 0.3833 × 8 = 3.0667
+# Subtotal 3.0667; 3.0667/15 = 20.4% < 40% → BREACH
+CASE_SALARY_CAP = {
+    "name": "salary_cap_applied",
+    "training": pd.DataFrame([
+        {"employee_id": "E1", "training_spend": 200000, "training_category": "B",
+         "salary_cost_during_training": 100000},
+    ]),
+    "learnerships": pd.DataFrame(),
+    "bursaries": pd.DataFrame(),
+    "employees": pd.DataFrame([
+        {"employee_id": "E1", "is_black": True, "fte_months_in_period": 12},
+    ]),
+    "settings": {"leviable_payroll": 10000000, "npat_current": 5000000},
+    "expected_points": {
+        "training_spend_pct": round(2.3 / 6.0 * 8, 4),
+        "learnership_participation_pct": 0.0,
+        "bursary_spend_pct": 0.0,
+    },
+    "expected_subtotal": round(2.3 / 6.0 * 8, 4),
+    "sub_minimum_breach": True,
+}
+
+ALL_CASES.append(CASE_SALARY_CAP)

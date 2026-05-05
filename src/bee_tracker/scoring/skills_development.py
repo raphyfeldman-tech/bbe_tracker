@@ -6,6 +6,7 @@ from .base import ElementResult, ElementScorer
 
 _BLACK_RACES = {"Black African", "Coloured", "Indian"}
 _QUALIFYING_CATEGORIES = {"B", "C", "D", "E", "F", "G"}
+_SALARY_CAP_PCT = 0.15
 
 
 def _is_black_race(value) -> bool:
@@ -26,7 +27,7 @@ def score_skills_development(
     npat = settings.get("npat_current") or 0
     headcount = len(employees) if not employees.empty else 0
 
-    # Indicator: training_spend_pct (Categories B-G only)
+    # Indicator: training_spend_pct (Categories B-G; salary cost capped at 15%)
     training_spend = 0.0
     if not training.empty and not employees.empty and "employee_id" in employees.columns:
         emp_lookup = employees.set_index("employee_id")["is_black"].to_dict()
@@ -36,7 +37,11 @@ def score_skills_development(
             category = str(row.get("training_category", "")).strip().upper()
             if category not in _QUALIFYING_CATEGORIES:
                 continue
-            training_spend += float(row.get("training_spend") or 0)
+            direct = float(row.get("training_spend") or 0)
+            salary = float(row.get("salary_cost_during_training") or 0)
+            # Cap salary cost at 15% of direct training cost (BEE codes).
+            salary = min(salary, direct * _SALARY_CAP_PCT)
+            training_spend += direct + salary
     training_pct = (training_spend / leviable_payroll * 100.0) if leviable_payroll else 0.0
 
     # learnership_participation_pct
