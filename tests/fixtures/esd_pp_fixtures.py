@@ -33,7 +33,8 @@ CASE_FULL = {
         },
     ]),
     "procurement": pd.DataFrame([
-        {"supplier_id": "S1", "period_spend_ex_vat": 1000000, "period_excluded_spend": 0},
+        {"supplier_id": "S1", "period_spend_ex_vat": 1000000, "period_excluded_spend": 0,
+         "avg_payment_terms_days": 60},
     ]),
     "esd_contributions": pd.DataFrame([
         {"type": "Enterprise Development", "cash_value": 100000, "in_kind_value": 0, "recognition_multiplier": 1.0},
@@ -46,6 +47,7 @@ CASE_FULL = {
         "spend_with_emes_qses": 0.0,
         "ed_spend_npat_pct": 5.0,
         "sd_spend_npat_pct": 10.0,
+        "payment_terms_30_day_bonus": 0.0,
     },
     "expected_subtotal": 43.0,
     "sub_minimum_breach": False,
@@ -71,8 +73,10 @@ CASE_MIXED = {
          "is_51pct_black_owned": True,  "is_30pct_black_women_owned": False, "is_emp_qse_51pct_black": True},
     ]),
     "procurement": pd.DataFrame([
-        {"supplier_id": "S1", "period_spend_ex_vat": 800000, "period_excluded_spend": 0},
-        {"supplier_id": "S2", "period_spend_ex_vat": 200000, "period_excluded_spend": 0},
+        {"supplier_id": "S1", "period_spend_ex_vat": 800000, "period_excluded_spend": 0,
+         "avg_payment_terms_days": 60},
+        {"supplier_id": "S2", "period_spend_ex_vat": 200000, "period_excluded_spend": 0,
+         "avg_payment_terms_days": 60},
     ]),
     "esd_contributions": pd.DataFrame([
         {"type": "Enterprise Development", "cash_value": 50000, "in_kind_value": 0, "recognition_multiplier": 1.0},
@@ -84,6 +88,7 @@ CASE_MIXED = {
         "spend_with_emes_qses": round(2.0 / 15.0 * 4, 4),
         "ed_spend_npat_pct": 2.5,
         "sd_spend_npat_pct": 0.0,
+        "payment_terms_30_day_bonus": 0.0,
     },
     "expected_subtotal": round(19.0 + 9.0 + 2.0/15.0*4 + 2.5 + 0.0, 4),
     "sub_minimum_breach": False,
@@ -102,7 +107,8 @@ CASE_BREACH = {
          "is_30pct_black_women_owned": False, "is_emp_qse_51pct_black": False},
     ]),
     "procurement": pd.DataFrame([
-        {"supplier_id": "S1", "period_spend_ex_vat": 1000000, "period_excluded_spend": 0},
+        {"supplier_id": "S1", "period_spend_ex_vat": 1000000, "period_excluded_spend": 0,
+         "avg_payment_terms_days": 60},
     ]),
     "esd_contributions": pd.DataFrame(),
     "settings": {"npat_current": 5000000},
@@ -112,10 +118,47 @@ CASE_BREACH = {
         "spend_with_emes_qses": 0.0,
         "ed_spend_npat_pct": 0.0,
         "sd_spend_npat_pct": 0.0,
+        "payment_terms_30_day_bonus": 0.0,
     },
     "expected_subtotal": 0.0,
     "sub_minimum_breach": True,
 }
 
 
-ALL_CASES = [CASE_FULL, CASE_MIXED, CASE_BREACH]
+# CASE_30_DAY_BONUS:
+# TMPS = R1m. S1 is Level 4, 51%-black-owned, paid in 25 days.
+# Recognised at S1 = R1m × 1.0 (Level 4 multiplier) = R1m.
+# total_b_bbee_pp_pct: R1m / R1m × 100 = 100% → cap (target 80) → 19 pts
+# spend_with_51pct_black: R1m / R1m = 100% → cap (target 40) → 9 pts
+# spend_with_emes_qses: 0% (cert_type Generic) → 0 pts
+# ed/sd/payment-30day:
+#   ED 0, SD 0
+#   payment_30day: R1m × 1.0 = R1m → 100% → cap (target 10) → 2 pts
+# Subtotal: 19 + 9 + 0 + 0 + 0 + 2 = 30
+CASE_30_DAY_BONUS = {
+    "name": "30_day_bonus_full",
+    "suppliers": pd.DataFrame([
+        {"supplier_id": "S1", "supplier_name": "Quick Pay", "cert_level": 4,
+         "cert_type": "Generic", "is_51pct_black_owned": True,
+         "is_30pct_black_women_owned": False, "is_emp_qse_51pct_black": False},
+    ]),
+    "procurement": pd.DataFrame([
+        {"supplier_id": "S1", "period_spend_ex_vat": 1000000,
+         "period_excluded_spend": 0, "avg_payment_terms_days": 25},
+    ]),
+    "esd_contributions": pd.DataFrame(),
+    "settings": {"npat_current": 5000000},
+    "expected_points": {
+        "total_b_bbee_pp_pct": 19.0,
+        "spend_with_51pct_black": 9.0,
+        "spend_with_emes_qses": 0.0,
+        "ed_spend_npat_pct": 0.0,
+        "sd_spend_npat_pct": 0.0,
+        "payment_terms_30_day_bonus": 2.0,
+    },
+    "expected_subtotal": 30.0,
+    "sub_minimum_breach": False,
+}
+
+
+ALL_CASES = [CASE_FULL, CASE_MIXED, CASE_BREACH, CASE_30_DAY_BONUS]

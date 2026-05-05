@@ -83,7 +83,7 @@ elements:
         target_pct: 2.5
         weighting: 3
   enterprise_supplier_dev:
-    total_points: 47
+    total_points: 49
     priority: true
     sub_minimum_pct: 40
     indicators:
@@ -102,6 +102,9 @@ elements:
       sd_spend_npat_pct:
         target_pct: 2
         weighting: 10
+      payment_terms_30_day_bonus:
+        target_pct: 10
+        weighting: 2
   socio_economic_dev:
     total_points: 5
     priority: false

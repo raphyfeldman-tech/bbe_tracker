@@ -13,13 +13,17 @@ def _supplier_lookup(suppliers: pd.DataFrame) -> pd.DataFrame:
 
 def _recognised_total(
     procurement: pd.DataFrame, suppliers_idx: pd.DataFrame, scorecard: Scorecard,
-    *, predicate=lambda s: True,
+    *,
+    predicate=lambda s: True,
+    row_predicate=lambda row: True,
 ) -> float:
     """Sum recognised spend across procurement rows whose supplier matches predicate."""
     if procurement.empty or suppliers_idx.empty:
         return 0.0
     total = 0.0
     for _, row in procurement.iterrows():
+        if not row_predicate(row):
+            continue
         sid = row.get("supplier_id")
         if sid not in suppliers_idx.index:
             continue
@@ -57,6 +61,11 @@ def score_esd_pp(
         procurement, suppliers_idx, scorecard,
         predicate=lambda s: str(s.get("cert_type")) in ("EME-affidavit", "QSE"),
     )
+    spend_30day = _recognised_total(
+        procurement, suppliers_idx, scorecard,
+        predicate=lambda s: bool(s.get("is_51pct_black_owned")),
+        row_predicate=lambda row: float(row.get("avg_payment_terms_days") or 999) <= 30,
+    )
 
     ed_spend = 0.0
     sd_spend = 0.0
@@ -78,6 +87,7 @@ def score_esd_pp(
         "spend_with_emes_qses": (spend_emes / tmps * 100) if tmps else 0.0,
         "ed_spend_npat_pct": (ed_spend / npat * 100) if npat else 0.0,
         "sd_spend_npat_pct": (sd_spend / npat * 100) if npat else 0.0,
+        "payment_terms_30_day_bonus": (spend_30day / tmps * 100) if tmps else 0.0,
     }
     indicator_points: dict[str, float] = {}
     for indicator, target in cfg.indicators.items():
