@@ -1,0 +1,45 @@
+<!doctype html>
+<html><body style="font-family: sans-serif;">
+{% if kind == "priority_breach" %}
+  <h2 style="color: #C00000;">⚠ Priority-Element Sub-Minimum BREACH</h2>
+  <p><strong>{{ entity_name }}</strong> currently has a priority-element
+     sub-minimum breach. The overall BEE level will be discounted at
+     verification unless these are remediated.</p>
+  <ul>
+  {% for b in breaches %}
+    <li><strong>{{ b.element|replace('_', ' ')|title }}</strong>:
+        {{ b.subtotal }} / {{ b.max_points }} pts (below 40% sub-minimum)</li>
+  {% endfor %}
+  </ul>
+
+{% elif kind == "cert_expiry" %}
+  <h2 style="color: #C00000;">Supplier BEE certs expiring</h2>
+  <p>The following suppliers for <strong>{{ entity_name }}</strong>
+     have BEE certificates expired or expiring soon. Recognised spend on
+     suppliers without valid certs is treated as non-compliant (0%
+     recognition multiplier).</p>
+  <table cellspacing="0" cellpadding="6" border="1" style="border-collapse: collapse;">
+    <tr><th>Supplier</th><th>Expiry</th><th>Days</th><th>Severity</th></tr>
+  {% for e in expiries %}
+    <tr>
+      <td>{{ e.supplier_name }} ({{ e.supplier_id }})</td>
+      <td>{{ e.expiry_date.isoformat() }}</td>
+      <td>{{ e.days_until_expiry }}</td>
+      <td>{{ e.severity.value|upper }}</td>
+    </tr>
+  {% endfor %}
+  </table>
+
+{% elif kind == "level_drop" %}
+  <h2 style="color: #C00000;">BEE level dropped</h2>
+  <p>The latest recalculation for <strong>{{ entity_name }}</strong>
+     shows a BEE level drop:
+     <strong>Level {{ prior_level }} → Level {{ current_level }}</strong>.
+     Investigate input changes since the last run.</p>
+{% endif %}
+
+<p style="color: #6B7280; font-size: 0.85em; margin-top: 2em;">
+  Sent by BEE Tracker. Reply to your team's BEE administrator if this
+  alert seems incorrect.
+</p>
+</body></html>
