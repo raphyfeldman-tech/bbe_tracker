@@ -90,6 +90,20 @@ templates/
   black-female sub-indicators (2+2+1 pts).
 - **`_black_disabled_share_pct`** in `management_control.py` — disability
   indicator (2 pts).
+- **`Scorecard.eap`** field — race percentages (african, coloured, indian,
+  white) loaded from the scorecard YAML.
+- **`_eap_split(target_pct, weight, eap)`** in `management_control.py` —
+  splits a (target, weight) pair across African / Coloured / Indian by
+  within-black EAP share.
+- **`_race_actual_pct_at_level(employees, predicate, race_name)`** —
+  FTE-weighted per-race share at a given occupational level.
+- **`_eap_weighted_points(employees, predicate, target_pct, weight, eap)`**
+  — EAP-weighted total points across the 3 black-race contributions; falls
+  back to aggregate-black scoring when EAP is empty (preserves backwards
+  compat).
+- **`_BLACK_LEVEL_INDICATORS`** dispatch map — the 5 main Management
+  Control indicators (board, exec directors, senior/middle/junior
+  management) routed through EAP.
 - **`payment_terms_30_day_bonus`** indicator in `score_esd_pp` — uses the
   new `row_predicate=` arg on `_recognised_total` to filter for 30-day
   payment terms (2 bonus pts).
@@ -104,7 +118,7 @@ templates/
 
 ## Testing
 
-- `pytest` runs the suite (180 passed + 2 skipped — PDF-render tests
+- `pytest` runs the suite (186 passed + 2 skipped — PDF-render tests
   skip when WeasyPrint can't import).
 - Graph client is tested with `responses` — no real network.
 - Backend abstraction means end-to-end tests run against a temp folder;
@@ -180,7 +194,6 @@ removed and `datetime.utcnow()` (deprecated in 3.12) can be replaced with
 - Service-install scripts for the daemon (Windows Service or systemd unit)
 - Scheduled-task setup for nightly recalc and daily cert-expiry alerts
 - Real SharePoint integration smoke test against a tenant
-- Full EAP race-by-level demographic weighting in `management_control.py`
 - 429 / 503 retry-with-backoff in `graph/client.py`
 - Pagination via `@odata.nextLink` on `GraphClient.list_folders`
 - GraphBackend wiring for `bee-validate-data`
@@ -264,3 +277,27 @@ Still deferred to later plans: full EAP demographic weighting (race-by-level
 targets) in Management Control, email alerts, evidence-pack export, service-
 install scripts, scheduled tasks, real SharePoint smoke test, 429/503 retry,
 pagination on list_folders, GraphBackend wiring for bee-validate-data.
+
+## Plan 3d: Full EAP demographic weighting
+
+Plan 3d closed the last big math gap: the 5 main Management Control "black at
+level" indicators now apply EAP-weighted scoring per the ICT Sector Code. Each
+indicator's target and weight split across African / Coloured / Indian
+race-specific sub-targets in EAP proportions; an entity's actual race share at
+the level is judged against each race-target separately. An all-Indian senior
+team only earns the Indian portion of the credit (~3% of the indicator's full
+weight), not the full black weight.
+
+The EAP machinery falls back gracefully to aggregate-black scoring when the
+scorecard YAML omits the `eap:` block — useful for older configs and for the
+gap-analysis synthetic perturbations.
+
+Black-female sub-indicators and black-disabled remain on aggregate-black
+scoring (EAP extension is a future-plan candidate).
+
+Notable downstream effect: the synthetic "+1 black employee" rows in
+`gap_analysis/non_financial.py::_headcount_opportunities` are now tagged
+`race: "African"` (the dominant SA EAP race; highest-yield modelled appointment)
+so the EAP-weighted scorer attributes points correctly.
+
+Test count grew 180 → 186.

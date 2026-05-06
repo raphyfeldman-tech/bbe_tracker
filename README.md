@@ -87,7 +87,7 @@ bee-generate-report --root /tmp/bee --entity sample --output /tmp/bee/report.pdf
 pytest -v
 ```
 
-(180 passed + 2 skipped — the 2 skips are PDF-render tests that skip when WeasyPrint can't import.)
+(186 passed + 2 skipped — the 2 skips are PDF-render tests that skip when WeasyPrint can't import.)
 
 ## Scope (Plan 1 + Plan 2)
 
@@ -113,7 +113,8 @@ What's done:
 - WhatIf sheet template ships with `key` / `value` headers
 - Generic `write_calc_element` writer (refactor; 5 per-element wrappers are now one-line shims)
 - Cross-process byte-determinism for the workbook template generator (`dcterms:modified` strip + per-entry zip mtime pin)
-- 180 passed + 2 skipped tests
+- EAP demographic weighting (race × level) on the 5 main Management Control indicators (board, exec directors, senior/middle/junior management). African / Coloured / Indian per-race targets at SA EAP proportions; an all-Indian senior team only earns the Indian race-weight portion of the indicator.
+- 186 passed + 2 skipped tests
 
 Deferred to Plan 3:
 - Email alerts (priority breach / cert expiry / level drop)
@@ -121,7 +122,8 @@ Deferred to Plan 3:
 - Service-install scripts for the daemon (Windows Service / systemd)
 - Scheduled-task setup for nightly recalc + daily cert-expiry alerts
 - Real SharePoint integration smoke test against a tenant
-- Full EAP demographic weighting in Management Control
+- EAP weighting on black-female sub-indicators (currently aggregate-black)
+- EAP weighting on black-disabled (currently aggregate-black)
 - 429/503 retry on Graph calls
 - Pagination on `list_folders`
 - GraphBackend wiring for `bee-validate-data` (validate-data still uses raw `load_workbook`)
