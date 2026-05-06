@@ -76,14 +76,31 @@ templates/
   non-financial opportunities).
 - **`RunQueue` functions** — `read_queued`, `mark_running`, `mark_completed`,
   `mark_failed`. Row identity is `request_id`.
-- **`Branding`** dataclass + **`load_branding(folder)`** — reads logo +
-  colours from a per-entity branding folder.
-- **`ReportContext`** + **`render_pdf(...)`** — renders the Jinja template
-  through WeasyPrint to a PDF.
+- **`Branding`** dataclass (logo + colours + optional font) +
+  **`load_branding(folder)`** — reads branding from a per-entity folder.
+- **`ReportContext`** + **`render_pdf(ctx, branding, output_path)`** —
+  renders the Jinja template through WeasyPrint to a PDF.
+- **`_QUALIFYING_CATEGORIES = {"B","C","D","E","F","G"}`** in
+  `skills_development.py` filters Skills Dev training rows
+  (excludes Category A orientation training).
+- **`_SALARY_CAP_PCT = 0.15`** caps the
+  `salary_cost_during_training` contribution to 15% of total payroll.
+- **`_BLACK_FEMALE_INDICATORS`** + **`_black_female_share_pct`** in
+  `management_control.py` — gender filter for senior/middle/junior
+  black-female sub-indicators (2+2+1 pts).
+- **`_black_disabled_share_pct`** in `management_control.py` — disability
+  indicator (2 pts).
+- **`payment_terms_30_day_bonus`** indicator in `score_esd_pp` — uses the
+  new `row_predicate=` arg on `_recognised_total` to filter for 30-day
+  payment terms (2 bonus pts).
+- **`write_calc_element(wb, sheet_name, result)`** — generic writer in
+  `workbook/writer.py`; the 5 per-element shims (`write_ownership`,
+  `write_management_control`, `write_skills_development`,
+  `write_esd_pp`, `write_sed`) now each delegate in a single line.
 
 ## Testing
 
-- `pytest` runs the suite (169 passed + 2 skipped — PDF-render tests
+- `pytest` runs the suite (180 passed + 2 skipped — PDF-render tests
   skip when WeasyPrint can't import).
 - Graph client is tested with `responses` — no real network.
 - Backend abstraction means end-to-end tests run against a temp folder;
@@ -119,8 +136,11 @@ pytest tests/test_workbook_template.py
 
 The `build_template` function pins workbook timestamps to a fixed datetime so
 regenerations are byte-identical (verified by `test_template_is_byte_deterministic`).
-If you see that test flake on the full suite, rerun in isolation — it's a
-known minor instability we're tracking for follow-up.
+Cross-process byte-determinism is enforced by stripping the `dcterms:modified`
+element from `core.xml` and pinning each zip entry's mtime in the saved file —
+both are essential because openpyxl resets `wb.properties.modified` at save
+time and the OOXML zip writer otherwise stamps each entry with the wall-clock
+time. See Plan 3b commit `0e8668a` for the implementation.
 
 ## Adding a new element
 
@@ -131,8 +151,9 @@ element or sub-indicator.
 1. New `src/bee_tracker/scoring/<element>.py` implementing `ElementScorer`
    (model on `management_control.py`).
 2. New reader function in `workbook/reader.py`.
-3. New writer function in `workbook/writer.py` (Plan 3 will deduplicate
-   these into a generic `write_calc_element`).
+3. New writer function in `workbook/writer.py` — call the generic
+   `write_calc_element(wb, sheet_name, result)` from a one-line shim
+   (the 5 existing element writers all now delegate this way).
 4. Register in `scoring/registry.default_registry()`.
 5. Add fixtures + tests (hand-calculate the expected score first).
 6. Extend `cli/calculate_score.run_score` to dispatch to the new scorer.
@@ -155,19 +176,10 @@ removed and `datetime.utcnow()` (deprecated in 3.12) can be replaced with
 - Service-install scripts for the daemon (Windows Service or systemd unit)
 - Scheduled-task setup for nightly recalc and daily cert-expiry alerts
 - Real SharePoint integration smoke test against a tenant
-- Black-female + EAP weighting in `management_control.py`
-- Category B–G split + salary cap in `skills_development.py`
-- 30-day payment bonus indicator in `esd_pp.py`
+- Full EAP race-by-level demographic weighting in `management_control.py`
 - 429 / 503 retry-with-backoff in `graph/client.py`
 - Pagination via `@odata.nextLink` on `GraphClient.list_folders`
 - GraphBackend wiring for `bee-validate-data`
-- WhatIf sheet's header row auto-created by `make_template.py`
-- Byte-determinism flake on `test_template_is_byte_deterministic` —
-  openpyxl resets `wb.properties.modified` at save time despite Plan 1's
-  pin; the in-process test passes only because both saves share the same
-  wall-clock second
-- Generic `write_calc_element(wb, sheet, result)` writer to deduplicate
-  the 5 per-element writers
 - Promote `Action`/`Opportunity` from `gap_analysis/` to a typed CSV
   export for the Dashboard's "Top Gaps" table
 - Drop the unused `apply_overrides` import from
@@ -193,15 +205,16 @@ The following are Plan 3 stretch items — Plan 2 ships a workable
 baseline that scores the elements correctly for typical Generic
 entities but doesn't yet model every edge case in the ICT Sector Code.
 
-- **Management Control:** no EAP weighting, no black-female sub-indicators,
-  no disabled-employee indicator. 5 indicators (board, exec directors,
-  senior/middle/junior mgmt) — see Plan 2 plan §Task 4.
-- **Skills Development:** 3 indicators (training spend %, learnership
-  participation %, bursary spend %). No Category B–G split, no salary cap
-  during training, no separate black-women target.
-- **ESD/PP:** 5 indicators (PP totals, 51% black, EME/QSE, ED, SD).
-  No 30-day payment bonus, no designated-group sub-indicator, no QSE
-  thresholds detail.
+- **Management Control:** Full EAP race-by-level demographic weighting
+  still deferred. Black-female (senior/middle/junior, 2+2+1 pts) and
+  black-disabled (2 pts) sub-indicators landed in Plan 3b — element grew
+  19 → 26 pts.
+- **Skills Development:** Black-women target still deferred. Categories
+  B–G filter (excludes Category A orientation) and 15% salary cap on
+  `salary_cost_during_training` landed in Plan 3b.
+- **ESD/PP:** Designated-group sub-indicator and detailed QSE thresholds
+  still deferred. 30-day payment bonus indicator (2 pts) landed in Plan 3b
+  — element grew 47 → 49 pts.
 - **SED:** 1 indicator. No 5-year average NPAT denominator override.
 - **Y.E.S.:** 3-tier ladder. Doesn't model the "must maintain prior-year
   contributor status" qualifier.
@@ -223,3 +236,15 @@ were done but that the integrated CLI never invoked. All 5 plus one
 | I1 | `RunQueue` sheet hidden by default in the template generator |
 
 Test count grew from 144 to 158.
+
+## Plan 3b additions (post-Plan-3a)
+
+| Area | Change |
+|---|---|
+| Management Control | Black-female sub-indicators (senior/middle/junior, 2+2+1 pts) + black-disabled indicator (2 pts). Element 19 → 26 pts. |
+| Skills Development | Categories B–G filter on `training_spend_pct`; 15% salary cap on `salary_cost_during_training`. |
+| Preferential Procurement | 30-day payment bonus indicator (2 pts). Element 47 → 49 pts. |
+| Template | WhatIf sheet ships with `key`/`value` headers; cross-process byte-determinism via `dcterms:modified` strip + per-entry zip mtime pin. |
+| Workbook | Generic `write_calc_element` + 5 thin per-element shims (eliminates ~50 lines of duplication). |
+
+Test count: 158 → 180 (+22).

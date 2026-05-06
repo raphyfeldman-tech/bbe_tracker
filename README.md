@@ -87,7 +87,7 @@ bee-generate-report --root /tmp/bee --entity sample --output /tmp/bee/report.pdf
 pytest -v
 ```
 
-(169 passed + 2 skipped — the 2 skips are PDF-render tests that skip when WeasyPrint can't import.)
+(180 passed + 2 skipped — the 2 skips are PDF-render tests that skip when WeasyPrint can't import.)
 
 ## Scope (Plan 1 + Plan 2)
 
@@ -107,7 +107,10 @@ What's done:
 - Daemon (`bee-run-queue-daemon`) supports `--backend graph` end-to-end
 - Office Script Run Assessment button + RunQueue round-trip
 - PDF reports with per-entity branding (`bee-generate-report`) — install `pip install -e ".[pdf]"` for WeasyPrint
-- 169 passed + 2 skipped tests
+- Black-female + black-disabled sub-indicators in Management Control (element grew 19 → 26 pts)
+- Skills Development Categories B–G filter + 15% salary cap on `salary_cost_during_training`
+- 30-day payment bonus indicator in Preferential Procurement (element grew 47 → 49 pts)
+- 180 passed + 2 skipped tests
 
 Deferred to Plan 3:
 - Email alerts (priority breach / cert expiry / level drop)
@@ -115,12 +118,7 @@ Deferred to Plan 3:
 - Service-install scripts for the daemon (Windows Service / systemd)
 - Scheduled-task setup for nightly recalc + daily cert-expiry alerts
 - Real SharePoint integration smoke test against a tenant
-- Black-female + EAP weighting in Management Control
-- Category B–G split + salary cap in Skills Development
-- 30-day payment bonus in PP
+- Full EAP demographic weighting in Management Control
 - 429/503 retry on Graph calls
 - Pagination on `list_folders`
-- Byte-determinism flake investigation (template generator)
 - GraphBackend wiring for `bee-validate-data` (validate-data still uses raw `load_workbook`)
-- WhatIf sheet header row (`["key", "value"]`) auto-created by template generator
-- Generic `write_calc_element(wb, sheet, result)` writer to deduplicate the 5 per-element writers
