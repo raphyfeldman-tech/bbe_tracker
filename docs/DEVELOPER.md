@@ -115,10 +115,23 @@ templates/
   pass that removes the `dcterms:modified` element from `core.xml` and pins
   each zip entry's mtime, giving cross-process byte-deterministic template
   output.
+- **`_request_with_retry(method, url, **kwargs)`** on `GraphClient` —
+  retries 429/503 up to 4 times respecting `Retry-After`.
+- **`MAX_RETRIES = 4`** and **`RETRY_STATUS_CODES = {429, 503}`**
+  constants in `graph/client.py`.
+- Pagination on `list_folders` via `@odata.nextLink`.
+- **`alerts/email.send_email(client, *, from_user, to, subject, html_body)`**
+  — Graph `sendMail` wrapper.
+- **`alerts/triggers.{detect_priority_breaches, detect_cert_expiries, detect_level_drop}`**
+  + **`Breach`** / **`CertExpiry`** / **`Severity`** value objects.
+- **`alerts/render.{render_priority_breach, render_cert_expiry, render_level_drop}`**
+  — Jinja-render alert email bodies.
+- **`evidence_pack.build_evidence_pack(root, entity_name, *, output_zip)`**
+  — zip workbook + referenced evidence + validation_latest.html.
 
 ## Testing
 
-- `pytest` runs the suite (186 passed + 2 skipped — PDF-render tests
+- `pytest` runs the suite (215 passed + 2 skipped — PDF-render tests
   skip when WeasyPrint can't import).
 - Graph client is tested with `responses` — no real network.
 - Backend abstraction means end-to-end tests run against a temp folder;
@@ -189,14 +202,11 @@ removed and `datetime.utcnow()` (deprecated in 3.12) can be replaced with
 
 ## Deferred tech debt (carry to Plan 3)
 
-- Email alerts (`send_alerts.py`) — priority breach / cert expiry / level drop
-- Evidence-pack export script (`export_evidence_pack.py`)
-- Service-install scripts for the daemon (Windows Service or systemd unit)
-- Scheduled-task setup for nightly recalc and daily cert-expiry alerts
-- Real SharePoint integration smoke test against a tenant
-- 429 / 503 retry-with-backoff in `graph/client.py`
-- Pagination via `@odata.nextLink` on `GraphClient.list_folders`
-- GraphBackend wiring for `bee-validate-data`
+- EAP weighting on black-female sub-indicators
+- EAP weighting on black-disabled
+- Service-install scripts (manual per `docs/OPERATIONS.md`)
+- Scheduled tasks (manual per `docs/OPERATIONS.md`)
+- Real SharePoint smoke test (manual per `docs/OPERATIONS.md`)
 - Promote `Action`/`Opportunity` from `gap_analysis/` to a typed CSV
   export for the Dashboard's "Top Gaps" table
 - Drop the unused `apply_overrides` import from
@@ -301,3 +311,24 @@ Notable downstream effect: the synthetic "+1 black employee" rows in
 so the EAP-weighted scorer attributes points correctly.
 
 Test count grew 180 → 186.
+
+## Plan 3c: Operations + alerts + evidence pack
+
+Plan 3c made the BEE Tracker production-reliable: Graph 429/503 retry with
+`Retry-After` backoff and `list_folders` pagination so transient throttling
+and entity-tree growth no longer abort runs. Three new CLIs landed:
+
+- `bee-send-alerts` — emails priority-breach / cert-expiry / level-drop
+  notifications via Graph `sendMail`. Recipients per entity via
+  `group_settings.yaml` `alerts:` block.
+- `bee-export-evidence-pack` — zips the workbook + every file referenced
+  in the `Evidence` sheet (skipping missing files with a warning) for
+  verification-agency hand-off.
+- `bee-validate-data --backend graph` — validation now runs against
+  SharePoint workbooks too.
+
+Operations infrastructure (service install, scheduled tasks, real-tenant
+smoke test) is documented in `docs/OPERATIONS.md` rather than automated
+here — those steps depend on the user's deployment target.
+
+Test count grew 186 → 215.

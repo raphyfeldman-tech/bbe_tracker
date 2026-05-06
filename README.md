@@ -79,6 +79,12 @@ bee-validate-data --root /tmp/bee --entity sample --report /tmp/bee/validation.h
 
 # PDF report (requires the entity's branding/ folder + the [pdf] extra installed)
 bee-generate-report --root /tmp/bee --entity sample --output /tmp/bee/report.pdf
+
+# Email alerts (requires GRAPH_* env vars + alert recipients in group_settings.yaml)
+bee-send-alerts --root /tmp/bee --entity sample --from-user bee-tracker@example.com
+
+# Evidence pack for the verifier
+bee-export-evidence-pack --root /tmp/bee --entity sample --output /tmp/bee/pack.zip
 ```
 
 ## Test
@@ -87,7 +93,7 @@ bee-generate-report --root /tmp/bee --entity sample --output /tmp/bee/report.pdf
 pytest -v
 ```
 
-(186 passed + 2 skipped — the 2 skips are PDF-render tests that skip when WeasyPrint can't import.)
+(215 passed + 2 skipped — the 2 skips are PDF-render tests that skip when WeasyPrint can't import.)
 
 ## Scope (Plan 1 + Plan 2)
 
@@ -114,16 +120,17 @@ What's done:
 - Generic `write_calc_element` writer (refactor; 5 per-element wrappers are now one-line shims)
 - Cross-process byte-determinism for the workbook template generator (`dcterms:modified` strip + per-entry zip mtime pin)
 - EAP demographic weighting (race × level) on the 5 main Management Control indicators (board, exec directors, senior/middle/junior management). African / Coloured / Indian per-race targets at SA EAP proportions; an all-Indian senior team only earns the Indian race-weight portion of the indicator.
-- 186 passed + 2 skipped tests
+- Graph 429/503 retry with `Retry-After` backoff
+- Graph `list_folders` pagination via `@odata.nextLink`
+- `bee-validate-data --backend graph` (Graph backend wiring on the validation CLI)
+- `bee-send-alerts` — email alerts via Microsoft Graph (priority breach / cert expiry / level drop)
+- `bee-export-evidence-pack` — one-click zip export of workbook + referenced evidence
+- Operations manual at `docs/OPERATIONS.md` (Azure app registration, daemon-as-service for systemd / Task Scheduler / launchd, cron scheduling, real-tenant smoke test)
+- 215 passed + 2 skipped tests
 
 Deferred to Plan 3:
-- Email alerts (priority breach / cert expiry / level drop)
-- Evidence-pack export (`export_evidence_pack.py`)
-- Service-install scripts for the daemon (Windows Service / systemd)
-- Scheduled-task setup for nightly recalc + daily cert-expiry alerts
-- Real SharePoint integration smoke test against a tenant
 - EAP weighting on black-female sub-indicators (currently aggregate-black)
 - EAP weighting on black-disabled (currently aggregate-black)
-- 429/503 retry on Graph calls
-- Pagination on `list_folders`
-- GraphBackend wiring for `bee-validate-data` (validate-data still uses raw `load_workbook`)
+- Service-install scripts (Windows Service / systemd) — see `docs/OPERATIONS.md` for manual setup
+- Scheduled tasks — see `docs/OPERATIONS.md`
+- Real SharePoint integration smoke test — see `docs/OPERATIONS.md`
