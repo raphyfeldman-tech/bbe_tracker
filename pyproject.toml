@@ -32,6 +32,7 @@ bee-validate-data = "bee_tracker.cli.validate_data:main"
 bee-run-queue-daemon = "bee_tracker.cli.run_queue_daemon:main"
 bee-generate-report = "bee_tracker.cli.generate_report:main"
 bee-send-alerts = "bee_tracker.cli.send_alerts:main"
+bee-export-evidence-pack = "bee_tracker.cli.export_evidence_pack:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
