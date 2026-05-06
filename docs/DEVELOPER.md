@@ -97,6 +97,10 @@ templates/
   `workbook/writer.py`; the 5 per-element shims (`write_ownership`,
   `write_management_control`, `write_skills_development`,
   `write_esd_pp`, `write_sed`) now each delegate in a single line.
+- **`_strip_dc_modified`** helper in `scripts/make_template.py` — post-save
+  pass that removes the `dcterms:modified` element from `core.xml` and pins
+  each zip entry's mtime, giving cross-process byte-deterministic template
+  output.
 
 ## Testing
 
@@ -237,14 +241,26 @@ were done but that the integrated CLI never invoked. All 5 plus one
 
 Test count grew from 144 to 158.
 
-## Plan 3b additions (post-Plan-3a)
+## Plan 3b: Math refinements + small tech debt
 
-| Area | Change |
+After Plan 3a (PDF reports), Plan 3b closed the math gaps that previously
+made the scorer untrustworthy for real entity analysis, plus 3 small
+tech-debt items:
+
+| ID | Fix |
 |---|---|
-| Management Control | Black-female sub-indicators (senior/middle/junior, 2+2+1 pts) + black-disabled indicator (2 pts). Element 19 → 26 pts. |
-| Skills Development | Categories B–G filter on `training_spend_pct`; 15% salary cap on `salary_cost_during_training`. |
-| Preferential Procurement | 30-day payment bonus indicator (2 pts). Element 47 → 49 pts. |
-| Template | WhatIf sheet ships with `key`/`value` headers; cross-process byte-determinism via `dcterms:modified` strip + per-entry zip mtime pin. |
-| Workbook | Generic `write_calc_element` + 5 thin per-element shims (eliminates ~50 lines of duplication). |
+| 1  | Black-female sub-indicators (senior/middle/junior) in Management Control |
+| 2  | Black-disabled indicator in Management Control (total: 9 indicators, 26 pts) |
+| 3  | Skills Development: Category B–G filter (excludes orientation/Category A) |
+| 4  | Skills Development: 15% cap on `salary_cost_during_training` |
+| 5  | PP: 30-day payment bonus indicator (49 pts total) |
+| 6  | WhatIf sheet ships with key/value headers |
+| 7  | Generic `write_calc_element` writer (5 per-element wrappers are now shims) |
+| 8  | Cross-process byte-determinism: dcterms:modified strip + per-entry zip mtime pin |
 
-Test count: 158 → 180 (+22).
+Test count grew 169 → 180.
+
+Still deferred to later plans: full EAP demographic weighting (race-by-level
+targets) in Management Control, email alerts, evidence-pack export, service-
+install scripts, scheduled tasks, real SharePoint smoke test, 429/503 retry,
+pagination on list_folders, GraphBackend wiring for bee-validate-data.

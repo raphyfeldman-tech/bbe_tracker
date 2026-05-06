@@ -107,9 +107,12 @@ What's done:
 - Daemon (`bee-run-queue-daemon`) supports `--backend graph` end-to-end
 - Office Script Run Assessment button + RunQueue round-trip
 - PDF reports with per-entity branding (`bee-generate-report`) — install `pip install -e ".[pdf]"` for WeasyPrint
-- Black-female + black-disabled sub-indicators in Management Control (element grew 19 → 26 pts)
-- Skills Development Categories B–G filter + 15% salary cap on `salary_cost_during_training`
-- 30-day payment bonus indicator in Preferential Procurement (element grew 47 → 49 pts)
+- Black-female sub-indicators (senior / middle / junior management) and black-disabled indicator in Management Control (now 9 indicators, 26 points)
+- Skills Development: Category B–G filter (excludes orientation training) + 15% salary cap on `salary_cost_during_training`
+- 30-day payment bonus indicator in Preferential Procurement (49 pts total)
+- WhatIf sheet template ships with `key` / `value` headers
+- Generic `write_calc_element` writer (refactor; 5 per-element wrappers are now one-line shims)
+- Cross-process byte-determinism for the workbook template generator (`dcterms:modified` strip + per-entry zip mtime pin)
 - 180 passed + 2 skipped tests
 
 Deferred to Plan 3:
