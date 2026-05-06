@@ -39,3 +39,66 @@ _LEVEL_RANK = {
 def detect_level_drop(current_level, prior_level) -> bool:
     """Return True if current_level is worse than prior_level."""
     return _LEVEL_RANK.get(current_level, 99) > _LEVEL_RANK.get(prior_level, 99)
+
+
+from datetime import date, datetime
+from enum import Enum
+import pandas as pd
+
+
+class Severity(Enum):
+    RED = "red"
+    AMBER = "amber"
+
+
+@dataclass(frozen=True)
+class CertExpiry:
+    supplier_id: str
+    supplier_name: str
+    expiry_date: date
+    days_until_expiry: int
+    severity: Severity
+
+
+def _parse_date(value) -> date | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    try:
+        return datetime.strptime(str(value), "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+
+def detect_cert_expiries(
+    suppliers: pd.DataFrame,
+    *,
+    today: date,
+    red_days: int = 30,
+    amber_days: int = 60,
+) -> list[CertExpiry]:
+    if suppliers.empty or "cert_expiry_date" not in suppliers.columns:
+        return []
+    out: list[CertExpiry] = []
+    for _, row in suppliers.iterrows():
+        expiry = _parse_date(row.get("cert_expiry_date"))
+        if expiry is None:
+            continue
+        days = (expiry - today).days
+        if days < red_days:
+            severity = Severity.RED
+        elif days < amber_days:
+            severity = Severity.AMBER
+        else:
+            continue
+        out.append(CertExpiry(
+            supplier_id=str(row.get("supplier_id") or ""),
+            supplier_name=str(row.get("supplier_name") or ""),
+            expiry_date=expiry,
+            days_until_expiry=days,
+            severity=severity,
+        ))
+    return out
