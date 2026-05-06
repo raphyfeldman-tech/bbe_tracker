@@ -35,9 +35,13 @@ def _headcount_opportunities(
 
     levels = ["Senior Mgmt", "Middle Mgmt", "Junior Mgmt"]
     for level in levels:
+        # race="African" is the dominant black race in the SA EAP; modelling a
+        # synthetic African appointment is the highest-yield demographic the
+        # EAP-weighted scorer can recognise.
         new_row = {
             "employee_id": f"SYN-{level.replace(' ', '')}",
             "is_black": True,
+            "race": "African",
             "occupational_level": level,
             "is_executive_director": False,
             "fte_months_in_period": 12,

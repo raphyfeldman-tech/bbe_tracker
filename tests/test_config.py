@@ -36,3 +36,33 @@ def test_load_group_settings_missing_required_field_raises():
             load_group_settings(bad)
     finally:
         bad.unlink()
+
+
+def test_load_scorecard_includes_eap():
+    sc = load_scorecard(FIX / "sample_ict_scorecard.yaml")
+    assert sc.eap == {
+        "african": 76.4,
+        "coloured": 9.7,
+        "indian": 2.7,
+        "white": 11.2,
+    }
+
+
+def test_load_scorecard_eap_defaults_empty_when_missing(tmp_path):
+    """A scorecard YAML without an `eap:` block returns {} for sc.eap."""
+    yaml_text = (FIX / "sample_ict_scorecard.yaml").read_text()
+    lines = yaml_text.splitlines()
+    out_lines = []
+    in_eap = False
+    for line in lines:
+        if line.startswith("eap:"):
+            in_eap = True
+            continue
+        if in_eap and line.startswith(("  ", "\t")):
+            continue
+        in_eap = False
+        out_lines.append(line)
+    bad = tmp_path / "no_eap.yaml"
+    bad.write_text("\n".join(out_lines) + "\n")
+    sc = load_scorecard(bad)
+    assert sc.eap == {}

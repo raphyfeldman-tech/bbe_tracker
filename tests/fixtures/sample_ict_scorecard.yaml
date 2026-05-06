@@ -113,6 +113,11 @@ elements:
       sed_spend_npat_pct:
         target_pct: 1.5
         weighting: 5
+eap:
+  african: 76.4
+  coloured: 9.7
+  indian: 2.7
+  white: 11.2
 recognition_levels:
   1: 1.35
   2: 1.25

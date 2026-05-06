@@ -34,6 +34,7 @@ class Scorecard:
     elements: dict[str, ElementConfig]
     recognition_levels: dict[int | str, float]
     yes_initiative: dict[str, dict] = field(default_factory=dict)
+    eap: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,7 @@ def load_scorecard(path: Path) -> Scorecard:
             elements=elements,
             recognition_levels=data["recognition_levels"],
             yes_initiative=data.get("yes_initiative", {}),
+            eap=data.get("eap", {}),
         )
     except KeyError as e:
         raise ConfigError(f"Missing key in scorecard YAML {path}: {e}") from e

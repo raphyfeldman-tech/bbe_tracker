@@ -95,24 +95,108 @@ def _black_female_share_pct(employees: pd.DataFrame, level: str) -> float:
     return float(bf_fte / total_fte * 100.0)
 
 
+_EAP_BLACK_RACES = ("african", "coloured", "indian")
+
+
+# Map indicator name → level predicate, used by the EAP-weighted dispatch.
+_BLACK_LEVEL_INDICATORS = {
+    "black_board_voting":         _board,
+    "black_executive_directors":  _exec_director,
+    "black_senior_mgmt":          _senior_mgmt,
+    "black_middle_mgmt":          _middle_mgmt,
+    "black_junior_mgmt":          _junior_mgmt,
+}
+
+
+def _eap_split(target_pct: float, weight: float, eap: dict[str, float]) -> dict[str, tuple[float, float]]:
+    """Split (target, weight) across African/Coloured/Indian by EAP share.
+
+    Returns {"african": (race_target, race_weight), "coloured": (...), "indian": (...)}.
+    Returns {} when EAP is empty (caller falls back to aggregate-black scoring).
+    """
+    if not eap:
+        return {}
+    total_black = sum(float(eap.get(r, 0)) for r in _EAP_BLACK_RACES)
+    if total_black <= 0:
+        return {}
+    out: dict[str, tuple[float, float]] = {}
+    for race in _EAP_BLACK_RACES:
+        share = float(eap.get(race, 0)) / total_black
+        out[race] = (target_pct * share, weight * share)
+    return out
+
+
+def _race_actual_pct_at_level(employees: pd.DataFrame, predicate, race_name: str) -> float:
+    """FTE-weighted percentage of employees of race_name at the level matching predicate.
+
+    race_name is one of 'african', 'coloured', 'indian' (case-insensitive on the
+    `race` column — we match against title-cased value).
+    """
+    if employees.empty or "race" not in employees.columns:
+        return 0.0
+    mask = employees.apply(predicate, axis=1)
+    pool = employees[mask]
+    if pool.empty:
+        return 0.0
+    total_fte = pool["fte_months_in_period"].fillna(0).sum()
+    if total_fte == 0:
+        return 0.0
+    target_label = race_name.title()  # "African", "Coloured", "Indian"
+    matching = pool[pool["race"].fillna("") == target_label]
+    matching_fte = matching["fte_months_in_period"].fillna(0).sum()
+    return float(matching_fte / total_fte * 100.0)
+
+
+def _eap_weighted_points(
+    employees: pd.DataFrame,
+    predicate,
+    target_pct: float,
+    weight: float,
+    eap: dict[str, float],
+) -> float:
+    """Score an indicator using EAP-weighted per-race targets + weights.
+
+    Falls back to aggregate-black scoring (Plan 3b behaviour) when EAP is empty.
+    """
+    eap_split = _eap_split(target_pct, weight, eap)
+    if not eap_split:
+        actual_pct = _black_share_pct(employees, predicate)
+        ratio = 0.0 if target_pct == 0 else actual_pct / target_pct
+        ratio = min(ratio, 1.0)
+        return round(ratio * weight, 4)
+
+    total = 0.0
+    for race, (race_target, race_weight) in eap_split.items():
+        actual = _race_actual_pct_at_level(employees, predicate, race)
+        ratio = 0.0 if race_target == 0 else actual / race_target
+        ratio = min(ratio, 1.0)
+        total += ratio * race_weight
+    return round(total, 4)
+
+
 def score_management_control(employees: pd.DataFrame, scorecard: Scorecard) -> ElementResult:
     cfg = scorecard.elements["management_control"]
     indicator_points: dict[str, float] = {}
     for indicator, target in cfg.indicators.items():
         if indicator == "black_disabled":
             actual_pct = _black_disabled_share_pct(employees)
+            ratio = 0.0 if target.target_pct == 0 else actual_pct / target.target_pct
+            ratio = min(ratio, 1.0)
+            indicator_points[indicator] = round(ratio * target.weighting, 4)
         elif indicator in _BLACK_FEMALE_INDICATORS:
             level = _BLACK_FEMALE_INDICATORS[indicator]
             actual_pct = _black_female_share_pct(employees, level)
+            ratio = 0.0 if target.target_pct == 0 else actual_pct / target.target_pct
+            ratio = min(ratio, 1.0)
+            indicator_points[indicator] = round(ratio * target.weighting, 4)
+        elif indicator in _BLACK_LEVEL_INDICATORS:
+            predicate = _BLACK_LEVEL_INDICATORS[indicator]
+            indicator_points[indicator] = _eap_weighted_points(
+                employees, predicate, target.target_pct, target.weighting,
+                scorecard.eap,
+            )
         else:
-            predicate = _INDICATOR_PREDICATES.get(indicator)
-            if predicate is None:
-                indicator_points[indicator] = 0.0
-                continue
-            actual_pct = _black_share_pct(employees, predicate)
-        ratio = 0.0 if target.target_pct == 0 else actual_pct / target.target_pct
-        ratio = min(ratio, 1.0)
-        indicator_points[indicator] = round(ratio * target.weighting, 4)
+            indicator_points[indicator] = 0.0
 
     subtotal = round(sum(indicator_points.values()), 4)
     return ElementResult(
