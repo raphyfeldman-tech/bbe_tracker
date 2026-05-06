@@ -105,13 +105,16 @@ class GraphClient:
 
     def list_folders(self, drive_id: str, folder_id: str) -> list[FolderChild]:
         url = f"{BASE_URL}/drives/{drive_id}/items/{folder_id}/children"
-        resp = self._request_with_retry(
-            "GET", url, headers=self._headers(), timeout=DEFAULT_TIMEOUT
-        )
-        if resp.status_code != 200:
-            raise GraphError(f"List failed ({resp.status_code}): {resp.text}")
-        return [
-            FolderChild(id=c["id"], name=c["name"])
-            for c in resp.json().get("value", [])
-            if "folder" in c
-        ]
+        out: list[FolderChild] = []
+        while url:
+            resp = self._request_with_retry(
+                "GET", url, headers=self._headers(), timeout=DEFAULT_TIMEOUT
+            )
+            if resp.status_code != 200:
+                raise GraphError(f"List failed ({resp.status_code}): {resp.text}")
+            payload = resp.json()
+            for c in payload.get("value", []):
+                if "folder" in c:
+                    out.append(FolderChild(id=c["id"], name=c["name"]))
+            url = payload.get("@odata.nextLink")
+        return out
