@@ -98,6 +98,29 @@ def _black_female_share_pct(employees: pd.DataFrame, level: str) -> float:
 _EAP_BLACK_RACES = ("african", "coloured", "indian")
 
 
+def _normalize_race(value) -> str:
+    """Map raw race string to canonical EAP key (lowercase).
+
+    Accepts both `"African"` (test fixtures) and `"Black African"` (workbook
+    template + skills_development convention). Same for `"Coloured"` /
+    `"Black Coloured"` and `"Indian"` / `"Black Indian"`. Returns `""` for
+    unrecognised values (treated as non-EAP, so they don't count toward
+    any of the three black-race shares).
+    """
+    if value is None:
+        return ""
+    s = str(value).strip().lower()
+    if "african" in s:
+        return "african"
+    if "coloured" in s or "colored" in s:
+        return "coloured"
+    if "indian" in s:
+        return "indian"
+    if "white" in s:
+        return "white"
+    return ""
+
+
 # Map indicator name → level predicate, used by the EAP-weighted dispatch.
 _BLACK_LEVEL_INDICATORS = {
     "black_board_voting":         _board,
@@ -127,11 +150,7 @@ def _eap_split(target_pct: float, weight: float, eap: dict[str, float]) -> dict[
 
 
 def _race_actual_pct_at_level(employees: pd.DataFrame, predicate, race_name: str) -> float:
-    """FTE-weighted percentage of employees of race_name at the level matching predicate.
-
-    race_name is one of 'african', 'coloured', 'indian' (case-insensitive on the
-    `race` column — we match against title-cased value).
-    """
+    """FTE-weighted percentage of employees of race_name at the level matching predicate."""
     if employees.empty or "race" not in employees.columns:
         return 0.0
     mask = employees.apply(predicate, axis=1)
@@ -141,8 +160,8 @@ def _race_actual_pct_at_level(employees: pd.DataFrame, predicate, race_name: str
     total_fte = pool["fte_months_in_period"].fillna(0).sum()
     if total_fte == 0:
         return 0.0
-    target_label = race_name.title()  # "African", "Coloured", "Indian"
-    matching = pool[pool["race"].fillna("") == target_label]
+    target = race_name.lower()
+    matching = pool[pool["race"].apply(_normalize_race) == target]
     matching_fte = matching["fte_months_in_period"].fillna(0).sum()
     return float(matching_fte / total_fte * 100.0)
 
